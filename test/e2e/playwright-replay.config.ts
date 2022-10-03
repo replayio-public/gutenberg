@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { devices } from '@playwright/test';
 import type { PlaywrightTestConfig } from '@playwright/test';
+import { devices as replayDevices } from '@replayio/playwright';
 
 const STORAGE_STATE_PATH =
 	process.env.STORAGE_STATE_PATH ||
