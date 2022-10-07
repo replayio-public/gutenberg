@@ -45,7 +45,8 @@ jobs:
               uses: replayio/action-upload@v0.4.5
               with:
                   api-key: rwk_yQySnIuU2WPV8LrmwIeWiaQNR5OS4Fi25hOeMDf7gRI
-                  filter: ${{ 'function($v) { $v.metadata.test.result = "failed" }' }}
+                  public: true
+                  # filter: ${{ 'function($v) { $v.metadata.test.result = "failed" }' }}
     e2e-no-record:
         name: E2E Tests (no record)
         runs-on: ubuntu-latest
