@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+
 import { View } from 'react-native';
 import Hr from 'react-native-hr';
 
@@ -8,7 +9,7 @@ import Hr from 'react-native-hr';
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Component } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import { withPreferredColorScheme } from '@wordpress/compose';
 
 /**
@@ -16,19 +17,16 @@ import { withPreferredColorScheme } from '@wordpress/compose';
  */
 import styles from './editor.scss';
 
-export class MoreEdit extends Component {
-	constructor() {
-		super( ...arguments );
+export export const MoreEdit = (props) => {
 
-		this.state = {
-			defaultText: __( 'Read more' ),
-		};
-	}
 
-	render() {
-		const { attributes, getStylesFromColorScheme } = this.props;
+    const [defaultText, setDefaultText] = useState(__( 'Read more' ));
+
+    
+
+    const { attributes, getStylesFromColorScheme } = props;
 		const { customText } = attributes;
-		const { defaultText } = this.state;
+		
 
 		const content = customText || defaultText;
 		const textStyle = getStylesFromColorScheme(
@@ -50,8 +48,10 @@ export class MoreEdit extends Component {
 					lineStyle={ lineStyle }
 				/>
 			</View>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default withPreferredColorScheme( MoreEdit );

@@ -1,12 +1,13 @@
 /**
  * External dependencies
  */
+
 import { View, TouchableHighlight, Text } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useCallback } from '@wordpress/element';
 import { Icon } from '@wordpress/components';
 import { withPreferredColorScheme } from '@wordpress/compose';
 import { __, sprintf } from '@wordpress/i18n';
@@ -17,21 +18,18 @@ import { BlockIcon } from '@wordpress/block-editor';
  */
 import styles from './style.scss';
 import sparkles from './sparkles';
-class MenuItem extends Component {
-	constructor() {
-		super( ...arguments );
+const MenuItem = (props) => {
 
-		this.onPress = this.onPress.bind( this );
-	}
 
-	onPress() {
-		const { onSelect, item } = this.props;
+    
+
+    const onPressHandler = useCallback(() => {
+		const { onSelect, item } = props;
 		onSelect( item );
-	}
+	}, []);
 
-	render() {
-		const { getStylesFromColorScheme, item, itemWidth, maxWidth } =
-			this.props;
+    const { getStylesFromColorScheme, item, itemWidth, maxWidth } =
+			props;
 
 		const modalIconWrapperStyle = getStylesFromColorScheme(
 			styles.modalIconWrapper,
@@ -71,7 +69,7 @@ class MenuItem extends Component {
 				activeOpacity={ 0.5 }
 				accessibilityRole="button"
 				accessibilityLabel={ accessibilityLabel }
-				onPress={ this.onPress }
+				onPress={ onPressHandler }
 				disabled={ item.isDisabled }
 			>
 				<View style={ [ styles.modalItem, { width: maxWidth } ] }>
@@ -102,9 +100,11 @@ class MenuItem extends Component {
 					</Text>
 				</View>
 			</TouchableHighlight>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 const InserterButton = withPreferredColorScheme( MenuItem );
 

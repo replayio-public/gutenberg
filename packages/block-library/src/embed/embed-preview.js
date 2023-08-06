@@ -1,6 +1,7 @@
 /**
  * Internal dependencies
  */
+
 import { getPhotoHtml } from './util';
 
 /**
@@ -12,51 +13,32 @@ import classnames from 'classnames/dedupe';
  * WordPress dependencies
  */
 import { __, sprintf } from '@wordpress/i18n';
-import { Placeholder, SandBox } from '@wordpress/components';
+import { SandBox } from '@wordpress/components';
 import {
-	RichText,
-	BlockIcon,
-	__experimentalGetElementClassName,
+    RichText
 } from '@wordpress/block-editor';
-import { Component } from '@wordpress/element';
+import { useState, useCallback } from '@wordpress/element';
 import { createBlock, getDefaultBlockName } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
  */
-import WpEmbedPreview from './wp-embed-preview';
 
-class EmbedPreview extends Component {
-	constructor() {
-		super( ...arguments );
-		this.hideOverlay = this.hideOverlay.bind( this );
-		this.state = {
-			interactive: false,
-		};
-	}
+const EmbedPreview = (props) => {
 
-	static getDerivedStateFromProps( nextProps, state ) {
-		if ( ! nextProps.isSelected && state.interactive ) {
-			// We only want to change this when the block is not selected, because changing it when
-			// the block becomes selected makes the overlap disappear too early. Hiding the overlay
-			// happens on mouseup when the overlay is clicked.
-			return { interactive: false };
-		}
 
-		return null;
-	}
+    const [interactive, setInteractive] = useState(false);
 
-	hideOverlay() {
+    const hideOverlayHandler = useCallback(() => {
 		// This is called onMouseUp on the overlay. We can't respond to the `isSelected` prop
 		// changing, because that happens on mouse down, and the overlay immediately disappears,
 		// and the mouse event can end up in the preview content. We can't use onClick on
 		// the overlay to hide it either, because then the editor misses the mouseup event, and
 		// thinks we're multi-selecting blocks.
-		this.setState( { interactive: true } );
-	}
+		setInteractive(true);
+	}, []);
 
-	render() {
-		const {
+    const {
 			preview,
 			previewable,
 			url,
@@ -68,9 +50,9 @@ class EmbedPreview extends Component {
 			icon,
 			label,
 			insertBlocksAfter,
-		} = this.props;
+		} = props;
 		const { scripts } = preview;
-		const { interactive } = this.state;
+		
 
 		const html = 'photo' === type ? getPhotoHtml( preview ) : preview.html;
 		const parsedHost = new URL( url ).host.split( '.' );
@@ -102,12 +84,12 @@ class EmbedPreview extends Component {
 						scripts={ scripts }
 						title={ iframeTitle }
 						type={ sandboxClassnames }
-						onFocus={ this.hideOverlay }
+						onFocus={ hideOverlayHandler }
 					/>
 					{ ! interactive && (
 						<div
 							className="block-library-embed__interactive-overlay"
-							onMouseUp={ this.hideOverlay }
+							onMouseUp={ hideOverlayHandler }
 						/>
 					) }
 				</div>
@@ -159,8 +141,19 @@ class EmbedPreview extends Component {
 					/>
 				) }
 			</figure>
-		);
-	}
-}
+		); 
+};
+
+EmbedPreview.getDerivedStateFromProps = ( nextProps, state ) => {
+		if ( ! nextProps.isSelected && state.interactive ) {
+			// We only want to change this when the block is not selected, because changing it when
+			// the block becomes selected makes the overlap disappear too early. Hiding the overlay
+			// happens on mouseup when the overlay is clicked.
+			return { interactive: false };
+		}
+
+		return null;
+	};
+
 
 export default EmbedPreview;

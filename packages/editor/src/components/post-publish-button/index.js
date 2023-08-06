@@ -1,14 +1,14 @@
 /**
  * External dependencies
  */
-import { get, some } from 'lodash';
-import classnames from 'classnames';
+
+import { get } from 'lodash';
 
 /**
  * WordPress dependencies
  */
 import { Button } from '@wordpress/components';
-import { Component, createRef } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { withSelect, withDispatch } from '@wordpress/data';
 import { compose } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
@@ -16,34 +16,24 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-import PublishButtonLabel from './label';
 import { store as editorStore } from '../../store';
 
 const noop = () => {};
 
-export class PostPublishButton extends Component {
-	constructor( props ) {
-		super( props );
-		this.buttonNode = createRef();
+export export const PostPublishButton = (props) => {
 
-		this.createOnClick = this.createOnClick.bind( this );
-		this.closeEntitiesSavedStates =
-			this.closeEntitiesSavedStates.bind( this );
 
-		this.state = {
-			entitiesSavedStatesCallback: false,
-		};
-	}
-	componentDidMount() {
-		if ( this.props.focusOnMount ) {
-			this.buttonNode.current.focus();
+    const [entitiesSavedStatesCallback, setEntitiesSavedStatesCallback] = useState(false);
+
+    useEffect(() => {
+		if ( props.focusOnMount ) {
+			buttonNodeHandler.current.focus();
 		}
-	}
-
-	createOnClick( callback ) {
+	}, []);
+    const createOnClickHandler = useCallback(( callback ) => {
 		return ( ...args ) => {
 			const { hasNonPostEntityChanges, setEntitiesSavedStatesCallback } =
-				this.props;
+				props;
 			// If a post with non-post entities is published, but the user
 			// elects to not save changes to the non-post entities, those
 			// entities will still be dirty when the Publish button is clicked.
@@ -53,46 +43,28 @@ export class PostPublishButton extends Component {
 				// The modal for multiple entity saving will open,
 				// hold the callback for saving/publishing the post
 				// so that we can call it if the post entity is checked.
-				this.setState( {
-					entitiesSavedStatesCallback: () => callback( ...args ),
-				} );
+				setEntitiesSavedStatesCallback(() => callback( ...args ));
 
 				// Open the save panel by setting its callback.
 				// To set a function on the useState hook, we must set it
 				// with another function (() => myFunction). Passing the
 				// function on its own will cause an error when called.
 				setEntitiesSavedStatesCallback(
-					() => this.closeEntitiesSavedStates
+					() => closeEntitiesSavedStatesHandler
 				);
 				return noop;
 			}
 
 			return callback( ...args );
 		};
-	}
+	}, []);
+    const closeEntitiesSavedStatesHandler = useCallback(( savedEntities ) => {
+		const { postType, postId } = props;
+		
+		setEntitiesSavedStatesCallback(false);
+	}, [entitiesSavedStatesCallback]);
 
-	closeEntitiesSavedStates( savedEntities ) {
-		const { postType, postId } = this.props;
-		const { entitiesSavedStatesCallback } = this.state;
-		this.setState( { entitiesSavedStatesCallback: false }, () => {
-			if (
-				savedEntities &&
-				some(
-					savedEntities,
-					( elt ) =>
-						elt.kind === 'postType' &&
-						elt.name === postType &&
-						elt.key === postId
-				)
-			) {
-				// The post entity was checked, call the held callback from `createOnClick`.
-				entitiesSavedStatesCallback();
-			}
-		} );
-	}
-
-	render() {
-		const {
+    const {
 			forceIsDirty,
 			forceIsSaving,
 			hasPublishAction,
@@ -112,7 +84,7 @@ export class PostPublishButton extends Component {
 			visibility,
 			hasNonPostEntityChanges,
 			isSavingNonPostEntityChanges,
-		} = this.props;
+		} = props;
 
 		const isButtonDisabled =
 			( isSaving ||
@@ -162,7 +134,7 @@ export class PostPublishButton extends Component {
 			className: 'editor-post-publish-button',
 			isBusy: ! isAutoSaving && isSaving && isPublished,
 			variant: 'primary',
-			onClick: this.createOnClick( onClickButton ),
+			onClick: createOnClickHandler( onClickButton ),
 		};
 
 		const toggleProps = {
@@ -171,7 +143,7 @@ export class PostPublishButton extends Component {
 			className: 'editor-post-publish-panel__toggle',
 			isBusy: isSaving && isPublished,
 			variant: 'primary',
-			onClick: this.createOnClick( onClickToggle ),
+			onClick: createOnClickHandler( onClickToggle ),
 		};
 
 		const toggleChildren = isBeingScheduled
@@ -189,7 +161,7 @@ export class PostPublishButton extends Component {
 		return (
 			<>
 				<Button
-					ref={ this.buttonNode }
+					ref={ buttonNodeHandler }
 					{ ...componentProps }
 					className={ classnames(
 						componentProps.className,
@@ -202,9 +174,11 @@ export class PostPublishButton extends Component {
 					{ componentChildren }
 				</Button>
 			</>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select ) => {

@@ -1,21 +1,21 @@
 /**
  * External dependencies
  */
-import memize from 'memize';
+
 import { map, without } from 'lodash';
 import { I18nManager } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useCallback, useEffect } from '@wordpress/element';
 import { EditorProvider } from '@wordpress/editor';
 import { parse, serialize, store as blocksStore } from '@wordpress/blocks';
 import { withDispatch, withSelect } from '@wordpress/data';
 import { compose } from '@wordpress/compose';
 import {
-	subscribeSetFocusOnTitle,
-	subscribeFeaturedImageIdNativeUpdated,
+    subscribeSetFocusOnTitle,
+    subscribeFeaturedImageIdNativeUpdated,
 } from '@wordpress/react-native-bridge';
 import { SlotFillProvider } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
@@ -23,37 +23,20 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
-import Layout from './components/layout';
 import { store as editPostStore } from './store';
 
-class Editor extends Component {
-	constructor( props ) {
-		super( ...arguments );
+const Editor = (props) => {
+const { galleryWithImageBlocks = true } = props;
 
-		// need to set this globally to avoid race with deprecations
-		// defaulting to true to avoid issues with a not-yet-cached value
-		const { galleryWithImageBlocks = true } = props;
-		window.wp.galleryBlockV2Enabled = galleryWithImageBlocks;
+    
 
-		if ( props.initialHtmlModeEnabled && props.mode === 'visual' ) {
-			// Enable html mode if the initial mode the parent wants it but we're not already in it.
-			this.props.switchEditorMode( 'text' );
-		}
-
-		this.getEditorSettings = memize( this.getEditorSettings, {
-			maxSize: 1,
-		} );
-
-		this.setTitleRef = this.setTitleRef.bind( this );
-	}
-
-	getEditorSettings(
+    const getEditorSettingsHandler = useCallback((
 		settings,
 		hasFixedToolbar,
 		focusMode,
 		hiddenBlockTypes,
 		blockTypes
-	) {
+	) => {
 		settings = {
 			...settings,
 			isRTL: I18nManager.isRTL,
@@ -83,23 +66,22 @@ class Editor extends Component {
 		}
 
 		return settings;
-	}
+	}, []);
+    useEffect(() => {
+		const { editEntityRecord, postType, postId } = props;
 
-	componentDidMount() {
-		const { editEntityRecord, postType, postId } = this.props;
-
-		this.subscriptionParentSetFocusOnTitle = subscribeSetFocusOnTitle(
+		subscriptionParentSetFocusOnTitleHandler = subscribeSetFocusOnTitle(
 			() => {
-				if ( this.postTitleRef ) {
-					this.postTitleRef.focus();
+				if ( postTitleRefHandler ) {
+					postTitleRefHandler.focus();
 				} else {
 					// If the post title ref is not available, we postpone setting focus to when it's available.
-					this.focusTitleWhenAvailable = true;
+					focusTitleWhenAvailableHandler = true;
 				}
 			}
 		);
 
-		this.subscriptionParentFeaturedImageIdNativeUpdated =
+		subscriptionParentFeaturedImageIdNativeUpdatedHandler =
 			subscribeFeaturedImageIdNativeUpdated( ( payload ) => {
 				editEntityRecord(
 					'postType',
@@ -111,29 +93,28 @@ class Editor extends Component {
 					}
 				);
 			} );
-	}
-
-	componentWillUnmount() {
-		if ( this.subscriptionParentSetFocusOnTitle ) {
-			this.subscriptionParentSetFocusOnTitle.remove();
+	}, []);
+    useEffect(() => {
+    return () => {
+		if ( subscriptionParentSetFocusOnTitleHandler ) {
+			subscriptionParentSetFocusOnTitleHandler.remove();
 		}
 
-		if ( this.subscribeFeaturedImageIdNativeUpdated ) {
-			this.subscribeFeaturedImageIdNativeUpdated.remove();
+		if ( subscribeFeaturedImageIdNativeUpdatedHandler ) {
+			subscribeFeaturedImageIdNativeUpdatedHandler.remove();
 		}
-	}
-
-	setTitleRef( titleRef ) {
-		if ( this.focusTitleWhenAvailable && ! this.postTitleRef ) {
-			this.focusTitleWhenAvailable = false;
+	};
+}, []);
+    const setTitleRefHandler = useCallback(( titleRef ) => {
+		if ( focusTitleWhenAvailableHandler && ! postTitleRefHandler ) {
+			focusTitleWhenAvailableHandler = false;
 			titleRef.focus();
 		}
 
-		this.postTitleRef = titleRef;
-	}
+		postTitleRefHandler = titleRef;
+	}, []);
 
-	render() {
-		const {
+    const {
 			settings,
 			hasFixedToolbar,
 			focusMode,
@@ -146,9 +127,9 @@ class Editor extends Component {
 			featuredImageId,
 			initialHtml,
 			...props
-		} = this.props;
+		} = props;
 
-		const editorSettings = this.getEditorSettings(
+		const editorSettings = getEditorSettingsHandler(
 			settings,
 			hasFixedToolbar,
 			focusMode,
@@ -182,12 +163,14 @@ class Editor extends Component {
 					useSubRegistry={ false }
 					{ ...props }
 				>
-					<Layout setTitleRef={ this.setTitleRef } />
+					<Layout setTitleRef={ setTitleRefHandler } />
 				</EditorProvider>
 			</SlotFillProvider>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select ) => {

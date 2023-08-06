@@ -1,33 +1,33 @@
 /**
  * External dependencies
  */
-import memize from 'memize';
+
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 /**
  * WordPress dependencies
  */
 import RNReactNativeGutenbergBridge, {
-	requestBlockTypeImpressions,
-	setBlockTypeImpressions,
-	subscribeParentGetHtml,
-	subscribeParentToggleHTMLMode,
-	subscribeUpdateHtml,
-	subscribeSetTitle,
-	subscribeMediaAppend,
-	subscribeReplaceBlock,
-	subscribeUpdateEditorSettings,
-	subscribeUpdateCapabilities,
-	subscribeShowNotice,
-	subscribeShowEditorHelp,
+    requestBlockTypeImpressions,
+    setBlockTypeImpressions,
+    subscribeParentGetHtml,
+    subscribeParentToggleHTMLMode,
+    subscribeUpdateHtml,
+    subscribeSetTitle,
+    subscribeMediaAppend,
+    subscribeReplaceBlock,
+    subscribeUpdateEditorSettings,
+    subscribeUpdateCapabilities,
+    subscribeShowNotice,
+    subscribeShowEditorHelp,
 } from '@wordpress/react-native-bridge';
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { count as wordCount } from '@wordpress/wordcount';
 import {
-	parse,
-	serialize,
-	getUnregisteredTypeHandlerName,
-	createBlock,
+    parse,
+    serialize,
+    getUnregisteredTypeHandlerName,
+    createBlock,
 } from '@wordpress/blocks';
 import { withDispatch, withSelect } from '@wordpress/data';
 import { compose } from '@wordpress/compose';
@@ -35,6 +35,10 @@ import { applyFilters } from '@wordpress/hooks';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { getGlobalStyles, getColorsAndGradients } from '@wordpress/components';
 import { NEW_BLOCK_TYPES } from '@wordpress/block-library';
+import { EditorHelpTopics, store as editorStore } from '@wordpress/editor';
+import { store as noticesStore } from '@wordpress/notices';
+import { store as coreStore } from '@wordpress/core-data';
+import { store as editPostStore } from '@wordpress/edit-post';
 
 const postTypeEntities = [
 	{ name: 'post', baseURL: '/wp/v2/posts' },
@@ -53,81 +57,54 @@ const postTypeEntities = [
 	},
 	rawAttributes: [ 'title', 'excerpt', 'content' ],
 } ) );
-import { EditorHelpTopics, store as editorStore } from '@wordpress/editor';
-import { store as noticesStore } from '@wordpress/notices';
-import { store as coreStore } from '@wordpress/core-data';
-import { store as editPostStore } from '@wordpress/edit-post';
 
 /**
  * Internal dependencies
  */
-import EditorProvider from './index.js';
 
-class NativeEditorProvider extends Component {
-	constructor() {
-		super( ...arguments );
+const NativeEditorProvider = (props) => {
 
-		// Keep a local reference to `post` to detect changes.
-		this.post = this.props.post;
-		this.props.addEntities( postTypeEntities );
-		this.props.receiveEntityRecords(
-			'postType',
-			this.post.type,
-			this.post
-		);
 
-		this.getEditorSettings = memize(
-			( settings, capabilities ) => ( {
-				...settings,
-				capabilities,
-			} ),
-			{
-				maxSize: 1,
-			}
-		);
-		this.state = {
-			isHelpVisible: false,
-		};
-	}
+    const [isHelpVisible, setIsHelpVisible] = useState(false);
 
-	componentDidMount() {
+    useEffect(() => {
 		const { capabilities, locale, hostAppNamespace, updateSettings } =
-			this.props;
+			props;
 
 		updateSettings( {
 			...capabilities,
-			...this.getThemeColors( this.props ),
+			...getThemeColorsHandler( props ),
 			locale,
 			hostAppNamespace,
 		} );
 
-		this.subscriptionParentGetHtml = subscribeParentGetHtml( () => {
-			this.serializeToNativeAction();
+		subscriptionParentGetHtmlHandler = subscribeParentGetHtml( () => {
+			serializeToNativeActionHandler();
 		} );
 
-		this.subscriptionParentToggleHTMLMode = subscribeParentToggleHTMLMode(
+		subscriptionParentToggleHTMLModeHandler = subscribeParentToggleHTMLMode(
 			() => {
-				this.toggleMode();
+				toggleModeHandler();
 			}
 		);
 
-		this.subscriptionParentSetTitle = subscribeSetTitle( ( payload ) => {
-			this.props.editTitle( payload.title );
+		subscriptionParentSetTitleHandler = subscribeSetTitle( ( payload ) => {
+			props.editTitle( payload.title );
 		} );
 
-		this.subscriptionParentUpdateHtml = subscribeUpdateHtml(
+		subscriptionParentUpdateHtmlHandler = subscribeUpdateHtml(
 			( payload ) => {
-				this.updateHtmlAction( payload.html );
+				updateHtmlActionHandler( payload.html );
 			}
 		);
 
-		this.subscriptionParentReplaceBlock = subscribeReplaceBlock(
+		subscriptionParentReplaceBlockHandler = subscribeReplaceBlock(
 			( payload ) => {
-				this.replaceBlockAction( payload.html, payload.clientId );
+				replaceBlockActionHandler( payload.html, payload.clientId );
 			}
 		);
 
-		this.subscriptionParentMediaAppend = subscribeMediaAppend(
+		subscriptionParentMediaAppendHandler = subscribeMediaAppend(
 			( payload ) => {
 				const blockName = 'core/' + payload.mediaType;
 				const newBlock = createBlock( blockName, {
@@ -136,39 +113,39 @@ class NativeEditorProvider extends Component {
 						payload.mediaUrl,
 				} );
 
-				const indexAfterSelected = this.props.selectedBlockIndex + 1;
+				const indexAfterSelected = props.selectedBlockIndex + 1;
 				const insertionIndex =
-					indexAfterSelected || this.props.blockCount;
+					indexAfterSelected || props.blockCount;
 
-				this.props.insertBlock( newBlock, insertionIndex );
+				props.insertBlock( newBlock, insertionIndex );
 			}
 		);
 
-		this.subscriptionParentUpdateEditorSettings =
+		subscriptionParentUpdateEditorSettingsHandler =
 			subscribeUpdateEditorSettings(
 				( { galleryWithImageBlocks, ...editorSettings } ) => {
 					if ( typeof galleryWithImageBlocks === 'boolean' ) {
 						window.wp.galleryBlockV2Enabled =
 							galleryWithImageBlocks;
 					}
-					updateSettings( this.getThemeColors( editorSettings ) );
+					updateSettings( getThemeColorsHandler( editorSettings ) );
 				}
 			);
 
-		this.subscriptionParentUpdateCapabilities = subscribeUpdateCapabilities(
+		subscriptionParentUpdateCapabilitiesHandler = subscribeUpdateCapabilities(
 			( payload ) => {
-				this.updateCapabilitiesAction( payload );
+				updateCapabilitiesActionHandler( payload );
 			}
 		);
 
-		this.subscriptionParentShowNotice = subscribeShowNotice(
+		subscriptionParentShowNoticeHandler = subscribeShowNotice(
 			( payload ) => {
-				this.props.createSuccessNotice( payload.message );
+				props.createSuccessNotice( payload.message );
 			}
 		);
 
-		this.subscriptionParentShowEditorHelp = subscribeShowEditorHelp( () => {
-			this.setState( { isHelpVisible: true } );
+		subscriptionParentShowEditorHelpHandler = subscribeShowEditorHelp( () => {
+			setIsHelpVisible(true);
 		} );
 
 		// Request current block impressions from native app.
@@ -188,52 +165,52 @@ class NativeEditorProvider extends Component {
 				setBlockTypeImpressions( impressions );
 			}
 		} );
-	}
-
-	componentWillUnmount() {
-		if ( this.subscriptionParentGetHtml ) {
-			this.subscriptionParentGetHtml.remove();
+	}, []);
+    useEffect(() => {
+    return () => {
+		if ( subscriptionParentGetHtmlHandler ) {
+			subscriptionParentGetHtmlHandler.remove();
 		}
 
-		if ( this.subscriptionParentToggleHTMLMode ) {
-			this.subscriptionParentToggleHTMLMode.remove();
+		if ( subscriptionParentToggleHTMLModeHandler ) {
+			subscriptionParentToggleHTMLModeHandler.remove();
 		}
 
-		if ( this.subscriptionParentSetTitle ) {
-			this.subscriptionParentSetTitle.remove();
+		if ( subscriptionParentSetTitleHandler ) {
+			subscriptionParentSetTitleHandler.remove();
 		}
 
-		if ( this.subscriptionParentUpdateHtml ) {
-			this.subscriptionParentUpdateHtml.remove();
+		if ( subscriptionParentUpdateHtmlHandler ) {
+			subscriptionParentUpdateHtmlHandler.remove();
 		}
 
-		if ( this.subscriptionParentReplaceBlock ) {
-			this.subscriptionParentReplaceBlock.remove();
+		if ( subscriptionParentReplaceBlockHandler ) {
+			subscriptionParentReplaceBlockHandler.remove();
 		}
 
-		if ( this.subscriptionParentMediaAppend ) {
-			this.subscriptionParentMediaAppend.remove();
+		if ( subscriptionParentMediaAppendHandler ) {
+			subscriptionParentMediaAppendHandler.remove();
 		}
 
-		if ( this.subscriptionParentUpdateEditorSettings ) {
-			this.subscriptionParentUpdateEditorSettings.remove();
+		if ( subscriptionParentUpdateEditorSettingsHandler ) {
+			subscriptionParentUpdateEditorSettingsHandler.remove();
 		}
 
-		if ( this.subscriptionParentUpdateCapabilities ) {
-			this.subscriptionParentUpdateCapabilities.remove();
+		if ( subscriptionParentUpdateCapabilitiesHandler ) {
+			subscriptionParentUpdateCapabilitiesHandler.remove();
 		}
 
-		if ( this.subscriptionParentShowNotice ) {
-			this.subscriptionParentShowNotice.remove();
+		if ( subscriptionParentShowNoticeHandler ) {
+			subscriptionParentShowNoticeHandler.remove();
 		}
 
-		if ( this.subscriptionParentShowEditorHelp ) {
-			this.subscriptionParentShowEditorHelp.remove();
+		if ( subscriptionParentShowEditorHelpHandler ) {
+			subscriptionParentShowEditorHelpHandler.remove();
 		}
-	}
-
-	getThemeColors( { rawStyles, rawFeatures } ) {
-		const { defaultEditorColors, defaultEditorGradients } = this.props;
+	};
+}, []);
+    const getThemeColorsHandler = useCallback(( { rawStyles, rawFeatures } ) => {
+		const { defaultEditorColors, defaultEditorGradients } = props;
 
 		if ( rawStyles && rawFeatures ) {
 			return getGlobalStyles( rawStyles, rawFeatures );
@@ -244,11 +221,10 @@ class NativeEditorProvider extends Component {
 			defaultEditorGradients,
 			rawFeatures
 		);
-	}
-
-	componentDidUpdate( prevProps ) {
-		if ( ! prevProps.isReady && this.props.isReady ) {
-			const blocks = this.props.blocks;
+	}, []);
+    useEffect(() => {
+		if ( ! prevProps.isReady && props.isReady ) {
+			const blocks = props.blocks;
 			const isUnsupportedBlock = ( { name } ) =>
 				name === getUnregisteredTypeHandlerName();
 			const unsupportedBlockNames = blocks
@@ -258,22 +234,21 @@ class NativeEditorProvider extends Component {
 				unsupportedBlockNames
 			);
 		}
-	}
-
-	serializeToNativeAction() {
-		const title = this.props.title;
+	}, []);
+    const serializeToNativeActionHandler = useCallback(() => {
+		const title = props.title;
 		let html;
 
-		if ( this.props.mode === 'text' ) {
+		if ( props.mode === 'text' ) {
 			// The HTMLTextInput component does not update the store when user is doing changes
 			// Let's request the HTML from the component's state directly.
 			html = applyFilters( 'native.persist-html' );
 		} else {
-			html = serialize( this.props.blocks );
+			html = serialize( props.blocks );
 		}
 
 		const hasChanges =
-			title !== this.post.title.raw || html !== this.post.content.raw;
+			title !== postHandler.title.raw || html !== postHandler.content.raw;
 
 		// Variable to store the content structure metrics.
 		const contentInfo = {};
@@ -282,8 +257,8 @@ class NativeEditorProvider extends Component {
 			'characters_including_spaces'
 		);
 		contentInfo.wordCount = wordCount( html, 'words' );
-		contentInfo.paragraphCount = this.props.paragraphCount;
-		contentInfo.blockCount = this.props.blockCount;
+		contentInfo.paragraphCount = props.paragraphCount;
+		contentInfo.blockCount = props.blockCount;
 		RNReactNativeGutenbergBridge.provideToNative_Html(
 			html,
 			title,
@@ -292,56 +267,53 @@ class NativeEditorProvider extends Component {
 		);
 
 		if ( hasChanges ) {
-			this.post.title.raw = title;
-			this.post.content.raw = html;
+			postHandler.title.raw = title;
+			postHandler.content.raw = html;
 		}
-	}
-
-	updateHtmlAction( html ) {
+	}, []);
+    const updateHtmlActionHandler = useCallback(( html ) => {
 		const parsed = parse( html );
-		this.props.resetEditorBlocksWithoutUndoLevel( parsed );
-	}
-
-	replaceBlockAction( html, blockClientId ) {
+		props.resetEditorBlocksWithoutUndoLevel( parsed );
+	}, []);
+    const replaceBlockActionHandler = useCallback(( html, blockClientId ) => {
 		const parsed = parse( html );
-		this.props.replaceBlock( blockClientId, parsed );
-	}
-
-	toggleMode() {
-		const { mode, switchMode } = this.props;
+		props.replaceBlock( blockClientId, parsed );
+	}, []);
+    const toggleModeHandler = useCallback(() => {
+		const { mode, switchMode } = props;
 		// Refresh html content first.
-		this.serializeToNativeAction();
+		serializeToNativeActionHandler();
 		// Make sure to blur the selected block and dismiss the keyboard.
-		this.props.clearSelectedBlock();
+		props.clearSelectedBlock();
 		switchMode( mode === 'visual' ? 'text' : 'visual' );
-	}
+	}, []);
+    const updateCapabilitiesActionHandler = useCallback(( capabilities ) => {
+		props.updateSettings( capabilities );
+	}, []);
 
-	updateCapabilitiesAction( capabilities ) {
-		this.props.updateSettings( capabilities );
-	}
-
-	render() {
-		const { children, post, capabilities, settings, ...props } = this.props;
-		const editorSettings = this.getEditorSettings( settings, capabilities );
+    const { children, post, capabilities, settings, ...props } = props;
+		const editorSettings = getEditorSettingsHandler( settings, capabilities );
 
 		return (
 			<>
 				<EditorProvider
-					post={ this.post }
+					post={ postHandler }
 					settings={ editorSettings }
 					{ ...props }
 				>
 					<SafeAreaProvider>{ children }</SafeAreaProvider>
 				</EditorProvider>
 				<EditorHelpTopics
-					isVisible={ this.state.isHelpVisible }
-					onClose={ () => this.setState( { isHelpVisible: false } ) }
-					close={ () => this.setState( { isHelpVisible: false } ) }
+					isVisible={ isHelpVisible }
+					onClose={ () => setIsHelpVisible(false); }
+					close={ () => setIsHelpVisible(false); }
 				/>
 			</>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select ) => {

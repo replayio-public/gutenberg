@@ -1,13 +1,14 @@
 /**
  * External dependencies
  */
+
 import { some } from 'lodash';
 
 /**
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Component } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import { compose, ifCondition } from '@wordpress/compose';
 import { withSelect } from '@wordpress/data';
 import { PanelBody } from '@wordpress/components';
@@ -39,32 +40,22 @@ const TagsPanel = () => {
 	);
 };
 
-class MaybeTagsPanel extends Component {
-	constructor( props ) {
-		super( props );
-		this.state = {
-			hadTagsWhenOpeningThePanel: props.hasTags,
-		};
-	}
+const MaybeTagsPanel = (props) => {
 
-	/*
-	 * We only want to show the tag panel if the post didn't have
-	 * any tags when the user hit the Publish button.
-	 *
-	 * We can't use the prop.hasTags because it'll change to true
-	 * if the user adds a new tag within the pre-publish panel.
-	 * This would force a re-render and a new prop.hasTags check,
-	 * hiding this panel and keeping the user from adding
-	 * more than one tag.
-	 */
-	render() {
-		if ( ! this.state.hadTagsWhenOpeningThePanel ) {
+
+    const [hadTagsWhenOpeningThePanel, setHadTagsWhenOpeningThePanel] = useState(props.hasTags);
+
+    
+
+    if ( ! hadTagsWhenOpeningThePanel ) {
 			return <TagsPanel />;
 		}
 
-		return null;
-	}
-}
+		return null; 
+};
+
+
+
 
 export default compose(
 	withSelect( ( select ) => {

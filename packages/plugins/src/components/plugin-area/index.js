@@ -1,18 +1,17 @@
 /**
  * External dependencies
  */
-import memoize from 'memize';
+
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useCallback, useEffect } from '@wordpress/element';
 import { addAction, removeAction } from '@wordpress/hooks';
 
 /**
  * Internal dependencies
  */
-import { PluginContextProvider } from '../plugin-context';
 import { PluginErrorBoundary } from '../plugin-error-boundary';
 import { getPlugins } from '../../api';
 
@@ -50,47 +49,37 @@ import { getPlugins } from '../../api';
  *
  * @return {WPComponent} The component to be rendered.
  */
-class PluginArea extends Component {
-	constructor() {
-		super( ...arguments );
+const PluginArea = (props) => {
 
-		this.setPlugins = this.setPlugins.bind( this );
-		this.memoizedContext = memoize( ( name, icon ) => {
-			return {
-				name,
-				icon,
-			};
-		} );
-		this.state = this.getCurrentPluginsState();
-	}
 
-	getCurrentPluginsState() {
+    
+
+    const getCurrentPluginsStateHandler = useCallback(() => {
 		return {
-			plugins: getPlugins( this.props.scope ).map(
+			plugins: getPlugins( props.scope ).map(
 				( { icon, name, render } ) => {
 					return {
 						Plugin: render,
-						context: this.memoizedContext( name, icon ),
+						context: memoizedContextHandler( name, icon ),
 					};
 				}
 			),
 		};
-	}
-
-	componentDidMount() {
+	}, []);
+    useEffect(() => {
 		addAction(
 			'plugins.pluginRegistered',
 			'core/plugins/plugin-area/plugins-registered',
-			this.setPlugins
+			setPluginsHandler
 		);
 		addAction(
 			'plugins.pluginUnregistered',
 			'core/plugins/plugin-area/plugins-unregistered',
-			this.setPlugins
+			setPluginsHandler
 		);
-	}
-
-	componentWillUnmount() {
+	}, []);
+    useEffect(() => {
+    return () => {
 		removeAction(
 			'plugins.pluginRegistered',
 			'core/plugins/plugin-area/plugins-registered'
@@ -99,31 +88,32 @@ class PluginArea extends Component {
 			'plugins.pluginUnregistered',
 			'core/plugins/plugin-area/plugins-unregistered'
 		);
-	}
+	};
+}, []);
+    const setPluginsHandler = useCallback(() => {
+		setStateHandler( getCurrentPluginsStateHandler );
+	}, []);
 
-	setPlugins() {
-		this.setState( this.getCurrentPluginsState );
-	}
-
-	render() {
-		return (
+    return (
 			<div style={ { display: 'none' } }>
-				{ this.state.plugins.map( ( { context, Plugin } ) => (
+				{ plugins.map( ( { context, Plugin } ) => (
 					<PluginContextProvider
 						key={ context.name }
 						value={ context }
 					>
 						<PluginErrorBoundary
 							name={ context.name }
-							onError={ this.props.onError }
+							onError={ props.onError }
 						>
 							<Plugin />
 						</PluginErrorBoundary>
 					</PluginContextProvider>
 				) ) }
 			</div>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default PluginArea;

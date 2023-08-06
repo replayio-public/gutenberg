@@ -1,8 +1,9 @@
 /**
  * WordPress dependencies
  */
+
 import { __ } from '@wordpress/i18n';
-import { Component } from '@wordpress/element';
+import { useState, useCallback } from '@wordpress/element';
 import { Button } from '@wordpress/components';
 import { link, keyboardReturn, arrowLeft } from '@wordpress/icons';
 
@@ -11,28 +12,21 @@ import { link, keyboardReturn, arrowLeft } from '@wordpress/icons';
  */
 import URLInput from './';
 
-class URLInputButton extends Component {
-	constructor() {
-		super( ...arguments );
-		this.toggle = this.toggle.bind( this );
-		this.submitLink = this.submitLink.bind( this );
-		this.state = {
-			expanded: false,
-		};
-	}
+const URLInputButton = (props) => {
 
-	toggle() {
-		this.setState( { expanded: ! this.state.expanded } );
-	}
 
-	submitLink( event ) {
+    const [expanded, setExpanded] = useState(false);
+
+    const toggleHandler = useCallback(() => {
+		setExpanded(! expanded);
+	}, [expanded]);
+    const submitLinkHandler = useCallback(( event ) => {
 		event.preventDefault();
-		this.toggle();
-	}
+		toggleHandler();
+	}, []);
 
-	render() {
-		const { url, onChange } = this.props;
-		const { expanded } = this.state;
+    const { url, onChange } = props;
+		
 		const buttonLabel = url ? __( 'Edit link' ) : __( 'Insert link' );
 
 		return (
@@ -40,21 +34,21 @@ class URLInputButton extends Component {
 				<Button
 					icon={ link }
 					label={ buttonLabel }
-					onClick={ this.toggle }
+					onClick={ toggleHandler }
 					className="components-toolbar__control"
 					isPressed={ !! url }
 				/>
 				{ expanded && (
 					<form
 						className="block-editor-url-input__button-modal"
-						onSubmit={ this.submitLink }
+						onSubmit={ submitLinkHandler }
 					>
 						<div className="block-editor-url-input__button-modal-line">
 							<Button
 								className="block-editor-url-input__back"
 								icon={ arrowLeft }
 								label={ __( 'Close' ) }
-								onClick={ this.toggle }
+								onClick={ toggleHandler }
 							/>
 							<URLInput
 								value={ url || '' }
@@ -69,9 +63,11 @@ class URLInputButton extends Component {
 					</form>
 				) }
 			</div>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 /**
  * @see https://github.com/WordPress/gutenberg/blob/HEAD/packages/block-editor/src/components/url-input/README.md

@@ -1,19 +1,20 @@
 /**
  * External dependencies
  */
+
 import {
-	Keyboard,
-	LayoutAnimation,
-	Platform,
-	StyleSheet,
-	View,
-	Dimensions,
+    Keyboard,
+    LayoutAnimation,
+    Platform,
+    StyleSheet,
+    View,
+    Dimensions,
 } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState, useCallback, useEffect } from '@wordpress/element';
 
 /**
  * This is a simplified version of Facebook's KeyboardAvoidingView.
@@ -22,18 +23,12 @@ import { Component } from '@wordpress/element';
  * BottomSheet was presented on Landscape, with the keyboard already present,
  * and a TextField on Autofocus (situation present on Links UI)
  */
-class KeyboardAvoidingView extends Component {
-	constructor() {
-		super( ...arguments );
+const KeyboardAvoidingView = (props) => {
 
-		this._onKeyboardChange = this._onKeyboardChange.bind( this );
-		this._subscriptions = [];
-		this.state = {
-			bottom: 0,
-		};
-	}
 
-	_relativeKeyboardHeight( keyboardFrame ) {
+    const [bottom, setBottom] = useState(0);
+
+    const _relativeKeyboardHeight = useMemo(() => {
 		if ( ! keyboardFrame ) {
 			return 0;
 		}
@@ -46,25 +41,24 @@ class KeyboardAvoidingView extends Component {
 
 		const windowHeight = Dimensions.get( 'window' ).height;
 		const keyboardY =
-			keyboardFrame.screenY - this.props.keyboardVerticalOffset;
+			keyboardFrame.screenY - props.keyboardVerticalOffset;
 
 		const final = Math.max( windowHeight - keyboardY, 0 );
 		return final;
-	}
-
-	/**
+	}, []);
+    /**
 	 * @param {Object} event Keyboard event.
 	 */
-	_onKeyboardChange( event ) {
+    const _onKeyboardChangeHandler = useCallback(( event ) => {
 		if ( event === null ) {
-			this.setState( { bottom: 0 } );
+			setBottom(0);
 			return;
 		}
 
 		const { duration, easing, endCoordinates } = event;
-		const height = this._relativeKeyboardHeight( endCoordinates );
+		const height = _relativeKeyboardHeight( endCoordinates );
 
-		if ( this.state.bottom === height ) {
+		if ( bottom === height ) {
 			return;
 		}
 
@@ -77,33 +71,32 @@ class KeyboardAvoidingView extends Component {
 				},
 			} );
 		}
-		this.setState( { bottom: height } );
-	}
-
-	componentDidMount() {
+		setBottom(height);
+	}, [bottom]);
+    useEffect(() => {
 		if ( Platform.OS === 'ios' ) {
-			this._subscriptions = [
+			_subscriptionsHandler = [
 				Keyboard.addListener(
 					'keyboardWillChangeFrame',
-					this._onKeyboardChange
+					_onKeyboardChangeHandler
 				),
 			];
 		}
-	}
-
-	componentWillUnmount() {
-		this._subscriptions.forEach( ( subscription ) => {
+	}, []);
+    useEffect(() => {
+    return () => {
+		_subscriptionsHandler.forEach( ( subscription ) => {
 			subscription.remove();
 		} );
-	}
+	};
+}, []);
 
-	render() {
-		const { children, enabled, keyboardVerticalOffset, style, ...props } =
-			this.props;
+    const { children, enabled, keyboardVerticalOffset, style, ...props } =
+			props;
 
 		let finalStyle = style;
 		if ( Platform.OS === 'ios' ) {
-			const bottomHeight = enabled ? this.state.bottom : 0;
+			const bottomHeight = enabled ? bottom : 0;
 			finalStyle = StyleSheet.compose( style, {
 				paddingBottom: bottomHeight,
 			} );
@@ -113,9 +106,11 @@ class KeyboardAvoidingView extends Component {
 			<View style={ finalStyle } { ...props }>
 				{ children }
 			</View>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 KeyboardAvoidingView.defaultProps = {
 	enabled: true,

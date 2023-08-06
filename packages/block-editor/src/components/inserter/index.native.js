@@ -1,24 +1,23 @@
 /**
  * External dependencies
  */
+
 import { AccessibilityInfo, Platform, Text } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { __, _x } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { Dropdown, ToolbarButton, Picker } from '@wordpress/components';
-import { Component } from '@wordpress/element';
+import { useRef, useEffect, useCallback } from '@wordpress/element';
 import { withDispatch, withSelect } from '@wordpress/data';
 import { compose, withPreferredColorScheme } from '@wordpress/compose';
 import { isUnmodifiedDefaultBlock } from '@wordpress/blocks';
 import {
-	Icon,
-	plus,
-	plusCircle,
-	plusCircleFilled,
-	insertAfter,
-	insertBefore,
+    Icon, plusCircle,
+    plusCircleFilled,
+    insertAfter,
+    insertBefore
 } from '@wordpress/icons';
 import { setBlockTypeImpressions } from '@wordpress/react-native-bridge';
 
@@ -26,7 +25,6 @@ import { setBlockTypeImpressions } from '@wordpress/react-native-bridge';
  * Internal dependencies
  */
 import styles from './style.scss';
-import InserterMenu from './menu';
 import BlockInsertionPoint from '../block-list/insertion-point';
 import { store as blockEditorStore } from '../../store';
 
@@ -78,22 +76,18 @@ const defaultRenderToggle = ( {
 	);
 };
 
-export class Inserter extends Component {
-	announcementTimeout;
+export export const Inserter = (props) => {
 
-	constructor() {
-		super( ...arguments );
 
-		this.onToggle = this.onToggle.bind( this );
-		this.renderInserterToggle = this.renderInserterToggle.bind( this );
-		this.renderContent = this.renderContent.bind( this );
-	}
+    
 
-	componentWillUnmount() {
-		clearTimeout( this.announcementTimeout );
-	}
-
-	getInsertionOptions() {
+    const announcementTimeout = useRef();
+    useEffect(() => {
+    return () => {
+		clearTimeout( announcementTimeout.current );
+	};
+}, []);
+    const getInsertionOptionsHandler = useCallback(() => {
 		const addBeforeOption = {
 			value: 'before',
 			label: __( 'Add Block Before' ),
@@ -124,7 +118,7 @@ export class Inserter extends Component {
 			icon: insertAfter,
 		};
 
-		const { isAnyBlockSelected, isSelectedBlockReplaceable } = this.props;
+		const { isAnyBlockSelected, isSelectedBlockReplaceable } = props;
 		if ( isAnyBlockSelected ) {
 			if ( isSelectedBlockReplaceable ) {
 				return [
@@ -143,16 +137,15 @@ export class Inserter extends Component {
 			];
 		}
 		return [ addToBeginningOption, addToEndOption ];
-	}
-
-	getInsertionIndex( insertionType ) {
+	}, []);
+    const getInsertionIndexHandler = useCallback(( insertionType ) => {
 		const {
 			insertionIndexDefault,
 			insertionIndexStart,
 			insertionIndexBefore,
 			insertionIndexAfter,
 			insertionIndexEnd,
-		} = this.props;
+		} = props;
 		if ( insertionType === 'start' ) {
 			return insertionIndexStart;
 		}
@@ -166,10 +159,9 @@ export class Inserter extends Component {
 			return insertionIndexEnd;
 		}
 		return insertionIndexDefault;
-	}
-
-	shouldReplaceBlock( insertionType ) {
-		const { isSelectedBlockReplaceable } = this.props;
+	}, []);
+    const shouldReplaceBlockHandler = useCallback(( insertionType ) => {
+		const { isSelectedBlockReplaceable } = props;
 		if ( insertionType === 'replace' ) {
 			return true;
 		}
@@ -177,10 +169,9 @@ export class Inserter extends Component {
 			return true;
 		}
 		return false;
-	}
-
-	onToggle( isOpen ) {
-		const { blockTypeImpressions, onToggle, updateSettings } = this.props;
+	}, []);
+    const onToggleHandler = useCallback(( isOpen ) => {
+		const { blockTypeImpressions, onToggle, updateSettings } = props;
 
 		if ( ! isOpen ) {
 			const impressionsRemain = Object.values(
@@ -212,17 +203,16 @@ export class Inserter extends Component {
 		if ( onToggle ) {
 			onToggle( isOpen );
 		}
-		this.onInserterToggledAnnouncement( isOpen );
-	}
-
-	onInserterToggledAnnouncement( isOpen ) {
+		onInserterToggledAnnouncementHandler( isOpen );
+	}, []);
+    const onInserterToggledAnnouncementHandler = useCallback(( isOpen ) => {
 		AccessibilityInfo.isScreenReaderEnabled().done( ( isEnabled ) => {
 			if ( isEnabled ) {
 				const isIOS = Platform.OS === 'ios';
 				const announcement = isOpen
 					? __( 'Scrollable block menu opened. Select a block.' )
 					: __( 'Scrollable block menu closed.' );
-				this.announcementTimeout = setTimeout(
+				announcementTimeout.current = setTimeout(
 					() =>
 						AccessibilityInfo.announceForAccessibility(
 							announcement
@@ -231,9 +221,8 @@ export class Inserter extends Component {
 				);
 			}
 		} );
-	}
-
-	/**
+	}, []);
+    /**
 	 * Render callback to display Dropdown toggle element.
 	 *
 	 * @param {Object}   options
@@ -243,14 +232,14 @@ export class Inserter extends Component {
 	 *
 	 * @return {WPElement} Dropdown toggle element.
 	 */
-	renderInserterToggle( { onToggle, isOpen } ) {
+    const renderInserterToggleHandler = useCallback(( { onToggle, isOpen } ) => {
 		const {
 			disabled,
 			renderToggle = defaultRenderToggle,
 			getStylesFromColorScheme,
 			showSeparator,
 			useExpandedMode,
-		} = this.props;
+		} = props;
 		if ( showSeparator && isOpen ) {
 			return <BlockInsertionPoint />;
 		}
@@ -267,32 +256,21 @@ export class Inserter extends Component {
 		);
 
 		const onPress = () => {
-			this.setState(
-				{
-					destinationRootClientId: this.props.destinationRootClientId,
-					shouldReplaceBlock: this.shouldReplaceBlock( 'default' ),
-					insertionIndex: this.getInsertionIndex( 'default' ),
-				},
-				onToggle
-			);
+			setDestinationRootClientId(props.destinationRootClientId);
+    setShouldReplaceBlock(shouldReplaceBlockHandler( 'default' ));
+    setInsertionIndex(getInsertionIndexHandler( 'default' ));
 		};
 
 		const onLongPress = () => {
-			if ( this.picker ) {
-				this.picker.presentPicker();
+			if ( pickerHandler ) {
+				pickerHandler.presentPicker();
 			}
 		};
 
 		const onPickerSelect = ( insertionType ) => {
-			this.setState(
-				{
-					destinationRootClientId: this.props.destinationRootClientId,
-					shouldReplaceBlock:
-						this.shouldReplaceBlock( insertionType ),
-					insertionIndex: this.getInsertionIndex( insertionType ),
-				},
-				onToggle
-			);
+			setDestinationRootClientId(props.destinationRootClientId);
+    setShouldReplaceBlock(shouldReplaceBlockHandler( insertionType ));
+    setInsertionIndex(getInsertionIndexHandler( insertionType ));
 		};
 
 		return (
@@ -307,16 +285,15 @@ export class Inserter extends Component {
 					useExpandedMode,
 				} ) }
 				<Picker
-					ref={ ( instance ) => ( this.picker = instance ) }
-					options={ this.getInsertionOptions() }
+					ref={ ( instance ) => ( pickerHandler = instance ) }
+					options={ getInsertionOptionsHandler() }
 					onChange={ onPickerSelect }
 					hideCancelButton
 				/>
 			</>
 		);
-	}
-
-	/**
+	}, []);
+    /**
 	 * Render callback to display Dropdown content element.
 	 *
 	 * @param {Object}   options
@@ -326,10 +303,9 @@ export class Inserter extends Component {
 	 *
 	 * @return {WPElement} Dropdown content element.
 	 */
-	renderContent( { onClose, isOpen } ) {
-		const { clientId, isAppender } = this.props;
-		const { destinationRootClientId, shouldReplaceBlock, insertionIndex } =
-			this.state;
+    const renderContentHandler = useCallback(( { onClose, isOpen } ) => {
+		const { clientId, isAppender } = props;
+		
 		return (
 			<InserterMenu
 				isOpen={ isOpen }
@@ -342,19 +318,20 @@ export class Inserter extends Component {
 				insertionIndex={ insertionIndex }
 			/>
 		);
-	}
+	}, []);
 
-	render() {
-		return (
+    return (
 			<Dropdown
-				onToggle={ this.onToggle }
+				onToggle={ onToggleHandler }
 				headerTitle={ __( 'Add a block' ) }
-				renderToggle={ this.renderInserterToggle }
-				renderContent={ this.renderContent }
+				renderToggle={ renderInserterToggleHandler }
+				renderContent={ renderContentHandler }
 			/>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withDispatch( ( dispatch ) => {

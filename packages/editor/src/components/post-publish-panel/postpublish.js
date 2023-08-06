@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+
 import { get } from 'lodash';
 
 /**
@@ -8,7 +9,7 @@ import { get } from 'lodash';
  */
 import { PanelBody, Button, TextControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
-import { Component, createRef } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { withSelect } from '@wordpress/data';
 import { addQueryArgs, safeDecodeURIComponent } from '@wordpress/url';
 import { decodeEntities } from '@wordpress/html-entities';
@@ -50,46 +51,34 @@ function CopyButton( { text, onCopy, children } ) {
 	);
 }
 
-class PostPublishPanelPostpublish extends Component {
-	constructor() {
-		super( ...arguments );
-		this.state = {
-			showCopyConfirmation: false,
-		};
-		this.onCopy = this.onCopy.bind( this );
-		this.onSelectInput = this.onSelectInput.bind( this );
-		this.postLink = createRef();
-	}
+const PostPublishPanelPostpublish = (props) => {
 
-	componentDidMount() {
-		if ( this.props.focusOnMount ) {
-			this.postLink.current.focus();
+
+    const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
+
+    useEffect(() => {
+		if ( props.focusOnMount ) {
+			postLinkHandler.current.focus();
 		}
-	}
+	}, []);
+    useEffect(() => {
+    return () => {
+		clearTimeout( dismissCopyConfirmationHandler );
+	};
+}, []);
+    const onCopyHandler = useCallback(() => {
+		setShowCopyConfirmation(true);
 
-	componentWillUnmount() {
-		clearTimeout( this.dismissCopyConfirmation );
-	}
-
-	onCopy() {
-		this.setState( {
-			showCopyConfirmation: true,
-		} );
-
-		clearTimeout( this.dismissCopyConfirmation );
-		this.dismissCopyConfirmation = setTimeout( () => {
-			this.setState( {
-				showCopyConfirmation: false,
-			} );
+		clearTimeout( dismissCopyConfirmationHandler );
+		dismissCopyConfirmationHandler = setTimeout( () => {
+			setShowCopyConfirmation(false);
 		}, 4000 );
-	}
-
-	onSelectInput( event ) {
+	}, []);
+    const onSelectInputHandler = useCallback(( event ) => {
 		event.target.select();
-	}
+	}, []);
 
-	render() {
-		const { children, isScheduled, post, postType } = this.props;
+    const { children, isScheduled, post, postType } = props;
 		const postLabel = get( postType, [ 'labels', 'singular_name' ] );
 		const viewPostLabel = get( postType, [ 'labels', 'view_item' ] );
 		const addNewPostLabel = get( postType, [ 'labels', 'add_new_item' ] );
@@ -111,7 +100,7 @@ class PostPublishPanelPostpublish extends Component {
 		return (
 			<div className="post-publish-panel__postpublish">
 				<PanelBody className="post-publish-panel__postpublish-header">
-					<a ref={ this.postLink } href={ link }>
+					<a ref={ postLinkHandler } href={ link }>
 						{ decodeEntities( post.title ) || __( '(no title)' ) }
 					</a>{ ' ' }
 					{ postPublishNonLinkHeader }
@@ -130,12 +119,12 @@ class PostPublishPanelPostpublish extends Component {
 								postLabel
 							) }
 							value={ safeDecodeURIComponent( link ) }
-							onFocus={ this.onSelectInput }
+							onFocus={ onSelectInputHandler }
 						/>
 
 						<div className="post-publish-panel__postpublish-post-address__copy-button-wrap">
-							<CopyButton text={ link } onCopy={ this.onCopy }>
-								{ this.state.showCopyConfirmation
+							<CopyButton text={ link } onCopy={ onCopyHandler }>
+								{ showCopyConfirmation
 									? __( 'Copied!' )
 									: __( 'Copy' ) }
 							</CopyButton>
@@ -158,9 +147,11 @@ class PostPublishPanelPostpublish extends Component {
 				</PanelBody>
 				{ children }
 			</div>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default withSelect( ( select ) => {
 	const { getEditedPostAttribute, getCurrentPost, isCurrentPostScheduled } =

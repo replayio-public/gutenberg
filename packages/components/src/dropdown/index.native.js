@@ -1,59 +1,53 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
 
-class Dropdown extends Component {
-	constructor() {
-		super( ...arguments );
+import { useState, useEffect, useCallback } from '@wordpress/element';
 
-		this.toggle = this.toggle.bind( this );
-		this.close = this.close.bind( this );
+const Dropdown = (props) => {
 
-		this.state = {
-			isOpen: false,
-		};
-	}
 
-	componentWillUnmount() {
-		const { isOpen } = this.state;
-		const { onToggle } = this.props;
+    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState();
+    const [isOpen, setIsOpen] = useState();
+
+    useEffect(() => {
+    return () => {
+		
+		const { onToggle } = props;
 		if ( isOpen && onToggle ) {
 			onToggle( false );
 		}
-	}
-
-	componentDidUpdate( prevProps, prevState ) {
-		const { isOpen } = this.state;
-		const { onToggle } = this.props;
+	};
+}, [isOpen]);
+    useEffect(() => {
+		
+		const { onToggle } = props;
 		if ( prevState.isOpen !== isOpen && onToggle ) {
 			onToggle( isOpen );
 		}
-	}
+	}, [isOpen]);
+    const toggleHandler = useCallback(() => {
+		setIsOpen(! state.isOpen);
+	}, []);
+    const closeHandler = useCallback(() => {
+		setIsOpen(false);
+	}, []);
 
-	toggle() {
-		this.setState( ( state ) => ( {
-			isOpen: ! state.isOpen,
-		} ) );
-	}
+    
+		const { renderContent, renderToggle } = props;
 
-	close() {
-		this.setState( { isOpen: false } );
-	}
-
-	render() {
-		const { isOpen } = this.state;
-		const { renderContent, renderToggle } = this.props;
-
-		const args = { isOpen, onToggle: this.toggle, onClose: this.close };
+		const args = { isOpen, onToggle: toggleHandler, onClose: closeHandler };
 
 		return (
 			<>
 				{ renderToggle( args ) }
 				{ isOpen && renderContent( args ) }
 			</>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default Dropdown;

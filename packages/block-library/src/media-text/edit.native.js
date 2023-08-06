@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+
 import { get } from 'lodash';
 import { View } from 'react-native';
 
@@ -9,21 +10,21 @@ import { View } from 'react-native';
  */
 import { __ } from '@wordpress/i18n';
 import {
-	BlockControls,
-	BlockVerticalAlignmentToolbar,
-	InnerBlocks,
-	InspectorControls,
-	withColors,
-	MEDIA_TYPE_IMAGE,
-	MEDIA_TYPE_VIDEO,
-	store as blockEditorStore,
+    BlockControls,
+    BlockVerticalAlignmentToolbar,
+    InnerBlocks,
+    InspectorControls,
+    withColors,
+    MEDIA_TYPE_IMAGE,
+    MEDIA_TYPE_VIDEO,
+    store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { Component } from '@wordpress/element';
+import { useState, useCallback } from '@wordpress/element';
 import {
-	Button,
-	ToolbarGroup,
-	PanelBody,
-	ToggleControl,
+    Button,
+    ToolbarGroup,
+    PanelBody,
+    ToggleControl,
 } from '@wordpress/components';
 import { withSelect } from '@wordpress/data';
 import { compose } from '@wordpress/compose';
@@ -32,7 +33,6 @@ import { pullLeft, pullRight, replace } from '@wordpress/icons';
 /**
  * Internal dependencies
  */
-import MediaContainer from './media-container';
 import styles from './style.scss';
 
 const TEMPLATE = [ [ 'core/paragraph' ] ];
@@ -47,38 +47,15 @@ const applyWidthConstraints = ( width ) =>
 		Math.min( width, 100 - WIDTH_CONSTRAINT_PERCENTAGE )
 	);
 
-class MediaTextEdit extends Component {
-	constructor() {
-		super( ...arguments );
+const MediaTextEdit = (props) => {
 
-		this.onSelectMedia = this.onSelectMedia.bind( this );
-		this.onMediaUpdate = this.onMediaUpdate.bind( this );
-		this.onWidthChange = this.onWidthChange.bind( this );
-		this.commitWidthChange = this.commitWidthChange.bind( this );
-		this.onLayoutChange = this.onLayoutChange.bind( this );
-		this.onMediaSelected = this.onMediaSelected.bind( this );
-		this.onReplaceMedia = this.onReplaceMedia.bind( this );
-		this.onSetOpenPickerRef = this.onSetOpenPickerRef.bind( this );
-		this.onSetImageFill = this.onSetImageFill.bind( this );
 
-		this.state = {
-			mediaWidth: null,
-			containerWidth: 0,
-			isMediaSelected: false,
-		};
-	}
+    const [mediaWidth, setMediaWidth] = useState(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+    const [isMediaSelected, setIsMediaSelected] = useState(false);
 
-	static getDerivedStateFromProps( props, state ) {
-		return {
-			isMediaSelected:
-				state.isMediaSelected &&
-				props.isSelected &&
-				! props.isAncestorSelected,
-		};
-	}
-
-	onSelectMedia( media ) {
-		const { setAttributes } = this.props;
+    const onSelectMedia = useMemo(() => {
+		const { setAttributes } = props;
 
 		let mediaType;
 		let src;
@@ -116,72 +93,57 @@ class MediaTextEdit extends Component {
 			imageFill: undefined,
 			focalPoint: undefined,
 		} );
-	}
-
-	onMediaUpdate( media ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onMediaUpdateHandler = useCallback(( media ) => {
+		const { setAttributes } = props;
 
 		setAttributes( {
 			mediaId: media.id,
 			mediaUrl: media.url,
 		} );
-	}
-
-	onWidthChange( width ) {
-		this.setState( {
-			mediaWidth: applyWidthConstraints( width ),
-		} );
-	}
-
-	commitWidthChange( width ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onWidthChangeHandler = useCallback(( width ) => {
+		setMediaWidth(applyWidthConstraints( width ));
+	}, []);
+    const commitWidthChangeHandler = useCallback(( width ) => {
+		const { setAttributes } = props;
 
 		setAttributes( {
 			mediaWidth: applyWidthConstraints( width ),
 		} );
-		this.setState( {
-			mediaWidth: null,
-		} );
-	}
-
-	onLayoutChange( { nativeEvent } ) {
+		setMediaWidth(null);
+	}, []);
+    const onLayoutChangeHandler = useCallback(( { nativeEvent } ) => {
 		const { width } = nativeEvent.layout;
-		const { containerWidth } = this.state;
+		
 
 		if ( containerWidth === width ) {
 			return null;
 		}
 
-		this.setState( {
-			containerWidth: width,
-		} );
-	}
-
-	onMediaSelected() {
-		this.setState( { isMediaSelected: true } );
-	}
-
-	onReplaceMedia() {
-		if ( this.openPickerRef ) {
-			this.openPickerRef();
+		setContainerWidth(width);
+	}, [containerWidth]);
+    const onMediaSelectedHandler = useCallback(() => {
+		setIsMediaSelected(true);
+	}, []);
+    const onReplaceMediaHandler = useCallback(() => {
+		if ( openPickerRefHandler ) {
+			openPickerRefHandler();
 		}
-	}
-
-	onSetOpenPickerRef( openPicker ) {
-		this.openPickerRef = openPicker;
-	}
-
-	onSetImageFill() {
-		const { attributes, setAttributes } = this.props;
+	}, []);
+    const onSetOpenPickerRefHandler = useCallback(( openPicker ) => {
+		openPickerRefHandler = openPicker;
+	}, []);
+    const onSetImageFillHandler = useCallback(() => {
+		const { attributes, setAttributes } = props;
 		const { imageFill } = attributes;
 
 		setAttributes( {
 			imageFill: ! imageFill,
 		} );
-	}
-
-	getControls() {
-		const { attributes } = this.props;
+	}, []);
+    const getControlsHandler = useCallback(() => {
+		const { attributes } = props;
 		const { imageFill } = attributes;
 
 		return (
@@ -190,15 +152,15 @@ class MediaTextEdit extends Component {
 					<ToggleControl
 						label={ __( 'Crop image to fill entire column' ) }
 						checked={ imageFill }
-						onChange={ this.onSetImageFill }
+						onChange={ onSetImageFillHandler }
 					/>
 				</PanelBody>
 			</InspectorControls>
 		);
-	}
-	renderMediaArea( shouldStack ) {
-		const { isMediaSelected, containerWidth } = this.state;
-		const { attributes, isSelected } = this.props;
+	}, []);
+    const renderMediaAreaHandler = useCallback(( shouldStack ) => {
+		
+		const { attributes, isSelected } = props;
 		const {
 			mediaAlt,
 			mediaId,
@@ -222,14 +184,14 @@ class MediaTextEdit extends Component {
 
 		return (
 			<MediaContainer
-				commitWidthChange={ this.commitWidthChange }
+				commitWidthChange={ commitWidthChangeHandler }
 				isMediaSelected={ isMediaSelected }
-				onFocus={ this.props.onFocus }
-				onMediaSelected={ this.onMediaSelected }
-				onMediaUpdate={ this.onMediaUpdate }
-				onSelectMedia={ this.onSelectMedia }
-				onSetOpenPickerRef={ this.onSetOpenPickerRef }
-				onWidthChange={ this.onWidthChange }
+				onFocus={ props.onFocus }
+				onMediaSelected={ onMediaSelectedHandler }
+				onMediaUpdate={ onMediaUpdateHandler }
+				onSelectMedia={ onSelectMedia }
+				onSetOpenPickerRef={ onSetOpenPickerRefHandler }
+				onWidthChange={ onWidthChangeHandler }
 				mediaWidth={ mediaAreaWidth }
 				{ ...{
 					mediaAlt,
@@ -245,10 +207,9 @@ class MediaTextEdit extends Component {
 				} }
 			/>
 		);
-	}
+	}, [mediaWidth, containerWidth, isMediaSelected]);
 
-	render() {
-		const {
+    const {
 			attributes,
 			backgroundColor,
 			setAttributes,
@@ -256,7 +217,7 @@ class MediaTextEdit extends Component {
 			isRTL,
 			style,
 			blockWidth,
-		} = this.props;
+		} = props;
 		const {
 			isStackedOnMobile,
 			imageFill,
@@ -265,13 +226,13 @@ class MediaTextEdit extends Component {
 			mediaType,
 			verticalAlignment,
 		} = attributes;
-		const { containerWidth, isMediaSelected } = this.state;
+		
 
 		const isMobile = containerWidth < BREAKPOINTS.mobile;
 		const shouldStack = isStackedOnMobile && isMobile;
 		const temporaryMediaWidth = shouldStack
 			? 100
-			: this.state.mediaWidth || mediaWidth;
+			: mediaWidth || mediaWidth;
 		const widthString = `${ temporaryMediaWidth }%`;
 		const innerBlockWidth = shouldStack ? 100 : 100 - temporaryMediaWidth;
 		const innerBlockWidthString = `${ innerBlockWidth }%`;
@@ -344,14 +305,14 @@ class MediaTextEdit extends Component {
 
 		return (
 			<>
-				{ mediaType === MEDIA_TYPE_IMAGE && this.getControls() }
+				{ mediaType === MEDIA_TYPE_IMAGE && getControlsHandler() }
 				<BlockControls>
 					{ hasMedia && (
 						<ToolbarGroup>
 							<Button
 								label={ __( 'Edit media' ) }
 								icon={ replace }
-								onClick={ this.onReplaceMedia }
+								onClick={ onReplaceMediaHandler }
 							/>
 						</ToolbarGroup>
 					) }
@@ -368,7 +329,7 @@ class MediaTextEdit extends Component {
 				</BlockControls>
 				<View
 					style={ containerStyles }
-					onLayout={ this.onLayoutChange }
+					onLayout={ onLayoutChangeHandler }
 				>
 					<View
 						style={ [
@@ -378,7 +339,7 @@ class MediaTextEdit extends Component {
 							mediaContainerStyle,
 						] }
 					>
-						{ this.renderMediaArea( shouldStack ) }
+						{ renderMediaAreaHandler( shouldStack ) }
 					</View>
 					<View style={ innerBlockContainerStyle }>
 						<InnerBlocks
@@ -388,9 +349,18 @@ class MediaTextEdit extends Component {
 					</View>
 				</View>
 			</>
-		);
-	}
-}
+		); 
+};
+
+MediaTextEdit.getDerivedStateFromProps = ( props, state ) => {
+		return {
+			isMediaSelected:
+				state.isMediaSelected &&
+				props.isSelected &&
+				! props.isAncestorSelected,
+		};
+	};
+
 
 export default compose(
 	withColors( 'backgroundColor' ),

@@ -1,13 +1,14 @@
 /**
  * External dependencies
  */
+
 import { AccessibilityInfo, View, Platform } from 'react-native';
 
 /**
  * WordPress dependencies
  */
 import { __, sprintf } from '@wordpress/i18n';
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { withPreferredColorScheme } from '@wordpress/compose';
 
 /**
@@ -24,111 +25,85 @@ const DEFAULT_STEP = 1;
 
 const isIOS = Platform.OS === 'ios';
 
-class BottomSheetStepperCell extends Component {
-	constructor( props ) {
-		super( props );
+const BottomSheetStepperCell = (props) => {
+const { value, defaultValue, min } = props;
+    const initialValue = value || defaultValue || min;
 
-		this.announceValue = this.announceValue.bind( this );
-		this.onDecrementValue = this.onDecrementValue.bind( this );
-		this.onDecrementValuePressIn =
-			this.onDecrementValuePressIn.bind( this );
-		this.onIncrementValue = this.onIncrementValue.bind( this );
-		this.onIncrementValuePressIn =
-			this.onIncrementValuePressIn.bind( this );
-		this.onPressOut = this.onPressOut.bind( this );
+    const [inputValue, setInputValue] = useState(initialValue);
+    const [stepperValue, setStepperValue] = useState(initialValue);
 
-		const { value, defaultValue, min } = props;
-
-		const initialValue = value || defaultValue || min;
-
-		this.state = {
-			inputValue: initialValue,
-			stepperValue: initialValue,
-		};
-	}
-
-	componentWillUnmount() {
-		clearTimeout( this.timeout );
-		clearInterval( this.interval );
-		clearTimeout( this.timeoutAnnounceValue );
-	}
-
-	onIncrementValue() {
-		const { step, max, onChange, value, decimalNum } = this.props;
+    useEffect(() => {
+    return () => {
+		clearTimeout( timeoutHandler );
+		clearInterval( intervalHandler );
+		clearTimeout( timeoutAnnounceValueHandler );
+	};
+}, []);
+    const onIncrementValueHandler = useCallback(() => {
+		const { step, max, onChange, value, decimalNum } = props;
 		let newValue = toFixed( value + step, decimalNum );
 		newValue =
 			parseInt( newValue ) === newValue ? parseInt( newValue ) : newValue;
 		if ( newValue <= max || max === undefined ) {
 			onChange( newValue );
-			this.setState( {
-				inputValue: newValue,
-			} );
-			this.announceValue( newValue );
+			setInputValue(newValue);
+			announceValueHandler( newValue );
 		}
-	}
-
-	onDecrementValue() {
-		const { step, min, onChange, value, decimalNum } = this.props;
+	}, []);
+    const onDecrementValueHandler = useCallback(() => {
+		const { step, min, onChange, value, decimalNum } = props;
 		let newValue = toFixed( value - step, decimalNum );
 		newValue =
 			parseInt( newValue ) === newValue ? parseInt( newValue ) : newValue;
 		if ( newValue >= min ) {
 			onChange( newValue );
-			this.setState( {
-				inputValue: newValue,
-			} );
-			this.announceValue( newValue );
+			setInputValue(newValue);
+			announceValueHandler( newValue );
 		}
-	}
-
-	onIncrementValuePressIn() {
-		this.onIncrementValue();
-		this.timeout = setTimeout( () => {
-			this.startPressInterval( this.onIncrementValue );
+	}, []);
+    const onIncrementValuePressInHandler = useCallback(() => {
+		onIncrementValueHandler();
+		timeoutHandler = setTimeout( () => {
+			startPressIntervalHandler( onIncrementValueHandler );
 		}, 500 );
-	}
-
-	onDecrementValuePressIn() {
-		this.onDecrementValue();
-		this.timeout = setTimeout( () => {
-			this.startPressInterval( this.onDecrementValue );
+	}, []);
+    const onDecrementValuePressInHandler = useCallback(() => {
+		onDecrementValueHandler();
+		timeoutHandler = setTimeout( () => {
+			startPressIntervalHandler( onDecrementValueHandler );
 		}, 500 );
-	}
-
-	onPressOut() {
-		clearTimeout( this.timeout );
-		clearInterval( this.interval );
-	}
-
-	startPressInterval( callback, speed = STEP_DELAY ) {
+	}, []);
+    const onPressOutHandler = useCallback(() => {
+		clearTimeout( timeoutHandler );
+		clearInterval( intervalHandler );
+	}, []);
+    const startPressIntervalHandler = useCallback(( callback, speed = STEP_DELAY ) => {
 		let counter = 0;
-		this.interval = setInterval( () => {
+		intervalHandler = setInterval( () => {
 			callback();
 			counter += 1;
 
 			if ( counter === 10 ) {
-				clearInterval( this.interval );
-				this.startPressInterval( callback, speed / 2 );
+				clearInterval( intervalHandler );
+				startPressIntervalHandler( callback, speed / 2 );
 			}
 		}, speed );
-	}
-
-	announceValue( value ) {
-		const { label, unitLabel = '' } = this.props;
+	}, []);
+    const announceValueHandler = useCallback(( value ) => {
+		const { label, unitLabel = '' } = props;
 
 		if ( isIOS ) {
 			// On Android it triggers the accessibilityLabel with the value change
-			clearTimeout( this.timeoutAnnounceValue );
-			this.timeoutAnnounceValue = setTimeout( () => {
+			clearTimeout( timeoutAnnounceValueHandler );
+			timeoutAnnounceValueHandler = setTimeout( () => {
 				AccessibilityInfo.announceForAccessibility(
 					`${ value } ${ unitLabel } ${ label }`
 				);
 			}, 300 );
 		}
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			label,
 			settingLabel = 'Value',
 			unitLabel = '',
@@ -144,8 +119,8 @@ class BottomSheetStepperCell extends Component {
 			openUnitPicker,
 			decimalNum,
 			cellContainerStyle,
-		} = this.props;
-		const { inputValue } = this.state;
+		} = props;
+		
 		const isMinValue = value === min;
 		const isMaxValue = value === max;
 		const labelStyle = [
@@ -185,10 +160,10 @@ class BottomSheetStepperCell extends Component {
 				onAccessibilityAction={ ( event ) => {
 					switch ( event.nativeEvent.actionName ) {
 						case 'increment':
-							this.onIncrementValue();
+							onIncrementValueHandler();
 							break;
 						case 'decrement':
-							this.onDecrementValue();
+							onDecrementValueHandler();
 							break;
 						case 'activate':
 							if ( openUnitPicker ) {
@@ -222,12 +197,12 @@ class BottomSheetStepperCell extends Component {
 								isMaxValue={ isMaxValue }
 								isMinValue={ isMinValue }
 								onPressInDecrement={
-									this.onDecrementValuePressIn
+									onDecrementValuePressInHandler
 								}
 								onPressInIncrement={
-									this.onIncrementValuePressIn
+									onIncrementValuePressInHandler
 								}
-								onPressOut={ this.onPressOut }
+								onPressOut={ onPressOutHandler }
 								value={ value }
 								shouldDisplayTextInput={
 									shouldDisplayTextInput
@@ -251,9 +226,11 @@ class BottomSheetStepperCell extends Component {
 					</Cell>
 				</View>
 			</View>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 BottomSheetStepperCell.defaultProps = {
 	step: DEFAULT_STEP,

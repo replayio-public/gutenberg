@@ -1,12 +1,13 @@
 /**
  * External dependencies
  */
+
 import { View } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { subscribeMediaUpload } from '@wordpress/react-native-bridge';
@@ -21,29 +22,23 @@ export const MEDIA_UPLOAD_STATE_SUCCEEDED = 2;
 export const MEDIA_UPLOAD_STATE_FAILED = 3;
 export const MEDIA_UPLOAD_STATE_RESET = 4;
 
-export class MediaUploadProgress extends Component {
-	constructor( props ) {
-		super( props );
+export export const MediaUploadProgress = (props) => {
 
-		this.state = {
-			progress: 0,
-			isUploadInProgress: false,
-			isUploadFailed: false,
-		};
 
-		this.mediaUpload = this.mediaUpload.bind( this );
-	}
+    const [progress, setProgress] = useState(0);
+    const [isUploadInProgress, setIsUploadInProgress] = useState(false);
+    const [isUploadFailed, setIsUploadFailed] = useState(false);
 
-	componentDidMount() {
-		this.addMediaUploadListener();
-	}
-
-	componentWillUnmount() {
-		this.removeMediaUploadListener();
-	}
-
-	mediaUpload( payload ) {
-		const { mediaId } = this.props;
+    useEffect(() => {
+		addMediaUploadListenerHandler();
+	}, []);
+    useEffect(() => {
+    return () => {
+		removeMediaUploadListenerHandler();
+	};
+}, []);
+    const mediaUploadHandler = useCallback(( payload ) => {
+		const { mediaId } = props;
 
 		if ( payload.mediaId !== mediaId ) {
 			return;
@@ -51,75 +46,68 @@ export class MediaUploadProgress extends Component {
 
 		switch ( payload.state ) {
 			case MEDIA_UPLOAD_STATE_UPLOADING:
-				this.updateMediaProgress( payload );
+				updateMediaProgressHandler( payload );
 				break;
 			case MEDIA_UPLOAD_STATE_SUCCEEDED:
-				this.finishMediaUploadWithSuccess( payload );
+				finishMediaUploadWithSuccessHandler( payload );
 				break;
 			case MEDIA_UPLOAD_STATE_FAILED:
-				this.finishMediaUploadWithFailure( payload );
+				finishMediaUploadWithFailureHandler( payload );
 				break;
 			case MEDIA_UPLOAD_STATE_RESET:
-				this.mediaUploadStateReset( payload );
+				mediaUploadStateResetHandler( payload );
 				break;
 		}
-	}
-
-	updateMediaProgress( payload ) {
-		this.setState( {
-			progress: payload.progress,
-			isUploadInProgress: true,
-			isUploadFailed: false,
-		} );
-		if ( this.props.onUpdateMediaProgress ) {
-			this.props.onUpdateMediaProgress( payload );
+	}, []);
+    const updateMediaProgressHandler = useCallback(( payload ) => {
+		setProgress(payload.progress);
+    setIsUploadInProgress(true);
+    setIsUploadFailed(false);
+		if ( props.onUpdateMediaProgress ) {
+			props.onUpdateMediaProgress( payload );
 		}
-	}
-
-	finishMediaUploadWithSuccess( payload ) {
-		this.setState( { isUploadInProgress: false } );
-		if ( this.props.onFinishMediaUploadWithSuccess ) {
-			this.props.onFinishMediaUploadWithSuccess( payload );
+	}, []);
+    const finishMediaUploadWithSuccessHandler = useCallback(( payload ) => {
+		setIsUploadInProgress(false);
+		if ( props.onFinishMediaUploadWithSuccess ) {
+			props.onFinishMediaUploadWithSuccess( payload );
 		}
-	}
-
-	finishMediaUploadWithFailure( payload ) {
-		this.setState( { isUploadInProgress: false, isUploadFailed: true } );
-		if ( this.props.onFinishMediaUploadWithFailure ) {
-			this.props.onFinishMediaUploadWithFailure( payload );
+	}, []);
+    const finishMediaUploadWithFailureHandler = useCallback(( payload ) => {
+		setIsUploadInProgress(false);
+    setIsUploadFailed(true);
+		if ( props.onFinishMediaUploadWithFailure ) {
+			props.onFinishMediaUploadWithFailure( payload );
 		}
-	}
-
-	mediaUploadStateReset( payload ) {
-		this.setState( { isUploadInProgress: false, isUploadFailed: false } );
-		if ( this.props.onMediaUploadStateReset ) {
-			this.props.onMediaUploadStateReset( payload );
+	}, []);
+    const mediaUploadStateResetHandler = useCallback(( payload ) => {
+		setIsUploadInProgress(false);
+    setIsUploadFailed(false);
+		if ( props.onMediaUploadStateReset ) {
+			props.onMediaUploadStateReset( payload );
 		}
-	}
-
-	addMediaUploadListener() {
+	}, []);
+    const addMediaUploadListenerHandler = useCallback(() => {
 		// If we already have a subscription not worth doing it again.
-		if ( this.subscriptionParentMediaUpload ) {
+		if ( subscriptionParentMediaUploadHandler ) {
 			return;
 		}
-		this.subscriptionParentMediaUpload = subscribeMediaUpload(
+		subscriptionParentMediaUploadHandler = subscribeMediaUpload(
 			( payload ) => {
-				this.mediaUpload( payload );
+				mediaUploadHandler( payload );
 			}
 		);
-	}
-
-	removeMediaUploadListener() {
-		if ( this.subscriptionParentMediaUpload ) {
-			this.subscriptionParentMediaUpload.remove();
+	}, []);
+    const removeMediaUploadListenerHandler = useCallback(() => {
+		if ( subscriptionParentMediaUploadHandler ) {
+			subscriptionParentMediaUploadHandler.remove();
 		}
-	}
+	}, []);
 
-	render() {
-		const { renderContent = () => null } = this.props;
-		const { isUploadInProgress, isUploadFailed } = this.state;
-		const showSpinner = this.state.isUploadInProgress;
-		const progress = this.state.progress * 100;
+    const { renderContent = () => null } = props;
+		
+		const showSpinner = isUploadInProgress;
+		const progress = progress * 100;
 		// eslint-disable-next-line @wordpress/i18n-no-collapsible-whitespace
 		const retryMessage = __(
 			'Failed to insert media.\nTap for more info.'
@@ -128,14 +116,14 @@ export class MediaUploadProgress extends Component {
 		const progressBarStyle = [
 			styles.progressBar,
 			showSpinner || styles.progressBarHidden,
-			this.props.progressBarStyle,
+			props.progressBarStyle,
 		];
 
 		return (
 			<View
 				style={ [
 					styles.mediaUploadProgress,
-					this.props.containerStyle,
+					props.containerStyle,
 				] }
 				pointerEvents="box-none"
 			>
@@ -143,7 +131,7 @@ export class MediaUploadProgress extends Component {
 					{ showSpinner && (
 						<Spinner
 							progress={ progress }
-							style={ this.props.spinnerStyle }
+							style={ props.spinnerStyle }
 							testID="spinner"
 						/>
 					) }
@@ -154,8 +142,10 @@ export class MediaUploadProgress extends Component {
 					retryMessage,
 				} ) }
 			</View>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default MediaUploadProgress;

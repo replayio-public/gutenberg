@@ -1,7 +1,8 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { BlockList } from '@wordpress/block-editor';
 /**
  * External dependencies
@@ -12,19 +13,12 @@ import { Keyboard } from 'react-native';
  */
 import Header from './header';
 
-export default class VisualEditor extends Component {
-	constructor( props ) {
-		super( props );
-		this.renderHeader = this.renderHeader.bind( this );
-		this.keyboardDidShow = this.keyboardDidShow.bind( this );
-		this.keyboardDidHide = this.keyboardDidHide.bind( this );
+export default export const VisualEditor = (props) => {
 
-		this.state = {
-			isAutoScrollEnabled: true,
-		};
-	}
 
-	componentDidMount() {
+    const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+
+    useEffect(() => {
 		this.keyboardDidShow = Keyboard.addListener(
 			'keyboardDidShow',
 			this.keyboardDidShow
@@ -33,28 +27,25 @@ export default class VisualEditor extends Component {
 			'keyboardDidHide',
 			this.keyboardDidHide
 		);
-	}
-
-	componentWillUnmount() {
+	}, []);
+    useEffect(() => {
+    return () => {
 		this.keyboardDidShow.remove();
 		this.keyboardDidHideListener.remove();
-	}
-
-	keyboardDidShow() {
+	};
+}, []);
+    const keyboardDidShowHandler = useCallback(() => {
 		this.setState( { isAutoScrollEnabled: false } );
-	}
-
-	keyboardDidHide() {
+	}, []);
+    const keyboardDidHideHandler = useCallback(() => {
 		this.setState( { isAutoScrollEnabled: true } );
-	}
-
-	renderHeader() {
+	}, []);
+    const renderHeaderHandler = useCallback(() => {
 		const { setTitleRef } = this.props;
 		return <Header setTitleRef={ setTitleRef } />;
-	}
+	}, []);
 
-	render() {
-		const { safeAreaBottomInset } = this.props;
+    const { safeAreaBottomInset } = this.props;
 		const { isAutoScrollEnabled } = this.state;
 
 		return (
@@ -63,6 +54,8 @@ export default class VisualEditor extends Component {
 				safeAreaBottomInset={ safeAreaBottomInset }
 				autoScroll={ isAutoScrollEnabled }
 			/>
-		);
-	}
-}
+		); 
+};
+
+
+

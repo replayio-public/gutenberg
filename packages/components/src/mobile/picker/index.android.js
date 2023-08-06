@@ -1,13 +1,14 @@
 /**
  * External dependencies
  */
+
 import { View } from 'react-native';
 
 /**
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Component, Fragment } from '@wordpress/element';
+import { useState, useCallback, Fragment } from '@wordpress/element';
 import { usePreferredColorSchemeStyle } from '@wordpress/compose';
 import { PanelBody, TextControl } from '@wordpress/components';
 
@@ -26,32 +27,23 @@ function Separator() {
 	return <View style={ separatorStyle } />;
 }
 
-export default class Picker extends Component {
-	constructor() {
-		super( ...arguments );
-		this.onClose = this.onClose.bind( this );
-		this.onCellPress = this.onCellPress.bind( this );
+export default export const Picker = (props) => {
 
-		this.state = {
-			isVisible: false,
-		};
-	}
 
-	presentPicker() {
+    const [isVisible, setIsVisible] = useState(false);
+
+    const presentPickerHandler = useCallback(() => {
 		this.setState( { isVisible: true } );
-	}
-
-	onClose() {
+	}, []);
+    const onCloseHandler = useCallback(() => {
 		this.setState( { isVisible: false } );
-	}
-
-	onCellPress( value ) {
+	}, []);
+    const onCellPressHandler = useCallback(( value ) => {
 		const { onChange } = this.props;
 		onChange( value );
 		this.onClose();
-	}
-
-	getOptions() {
+	}, []);
+    const getOptionsHandler = useCallback(() => {
 		const { options, leftAlign } = this.props;
 
 		return options.map( ( option ) => (
@@ -71,10 +63,9 @@ export default class Picker extends Component {
 				/>
 			</Fragment>
 		) );
-	}
+	}, []);
 
-	render() {
-		const { hideCancelButton, title, testID } = this.props;
+    const { hideCancelButton, title, testID } = this.props;
 		const { isVisible } = this.state;
 
 		return (
@@ -98,6 +89,8 @@ export default class Picker extends Component {
 					) }
 				</PanelBody>
 			</BottomSheet>
-		);
-	}
-}
+		); 
+};
+
+
+

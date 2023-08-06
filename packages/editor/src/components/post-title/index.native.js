@@ -1,17 +1,18 @@
 /**
  * External dependencies
  */
+
 import { View } from 'react-native';
 import { isEmpty } from 'lodash';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useEffect, useCallback } from '@wordpress/element';
 import {
-	__experimentalRichText as RichText,
-	create,
-	insert,
+    __experimentalRichText as RichText,
+    create,
+    insert,
 } from '@wordpress/rich-text';
 import { decodeEntities } from '@wordpress/html-entities';
 import { withDispatch, withSelect } from '@wordpress/data';
@@ -27,41 +28,36 @@ import { store as editorStore } from '@wordpress/editor';
  */
 import styles from './style.scss';
 
-class PostTitle extends Component {
-	constructor( props ) {
-		super( props );
+const PostTitle = (props) => {
 
-		this.setRef = this.setRef.bind( this );
-	}
-	componentDidUpdate( prevProps ) {
+
+    
+
+    useEffect(() => {
 		// Unselect if any other block is selected and blur the RichText.
 		if (
-			this.props.isSelected &&
+			props.isSelected &&
 			! prevProps.isAnyBlockSelected &&
-			this.props.isAnyBlockSelected
+			props.isAnyBlockSelected
 		) {
-			if ( this.richTextRef ) {
-				this.richTextRef.blur();
+			if ( richTextRefHandler ) {
+				richTextRefHandler.blur();
 			}
-			this.props.onUnselect();
+			props.onUnselect();
 		}
-	}
-
-	componentDidMount() {
-		if ( this.props.innerRef ) {
-			this.props.innerRef( this );
+	}, []);
+    useEffect(() => {
+		if ( props.innerRef ) {
+			props.innerRef( this );
 		}
-	}
-
-	handleFocusOutside() {
-		this.props.onUnselect();
-	}
-
-	focus() {
-		this.props.onSelect();
-	}
-
-	onPaste( { value, onChange, plainText } ) {
+	}, []);
+    const handleFocusOutsideHandler = useCallback(() => {
+		props.onUnselect();
+	}, []);
+    const focusHandler = useCallback(() => {
+		props.onSelect();
+	}, []);
+    const onPasteHandler = useCallback(( { value, onChange, plainText } ) => {
 		const content = pasteHandler( {
 			plainText,
 			mode: 'INLINE',
@@ -72,13 +68,11 @@ class PostTitle extends Component {
 			const valueToInsert = create( { html: content } );
 			onChange( insert( value, valueToInsert ) );
 		}
-	}
-
-	setRef( richText ) {
-		this.richTextRef = richText;
-	}
-
-	getTitle( title, postType ) {
+	}, []);
+    const setRefHandler = useCallback(( richText ) => {
+		richTextRefHandler = richText;
+	}, []);
+    const getTitleHandler = useCallback(( title, postType ) => {
 		if ( 'page' === postType ) {
 			return isEmpty( title )
 				? /* translators: accessibility text. empty page title. */
@@ -98,10 +92,9 @@ class PostTitle extends Component {
 					__( 'Post title. %s' ),
 					title
 			  );
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			placeholder,
 			style,
 			title,
@@ -110,10 +103,10 @@ class PostTitle extends Component {
 			isDimmed,
 			postType,
 			globalStyles,
-		} = this.props;
+		} = props;
 
 		const decodedPlaceholder = decodeEntities( placeholder );
-		const borderColor = this.props.isSelected
+		const borderColor = props.isSelected
 			? focusedBorderColor
 			: 'transparent';
 		const titleStyles = {
@@ -132,17 +125,17 @@ class PostTitle extends Component {
 					{ borderColor },
 					isDimmed && styles.dimmed,
 				] }
-				accessible={ ! this.props.isSelected }
-				accessibilityLabel={ this.getTitle( title, postType ) }
+				accessible={ ! props.isSelected }
+				accessibilityLabel={ getTitleHandler( title, postType ) }
 				accessibilityHint={ __( 'Updates the title.' ) }
 			>
 				<RichText
-					setRef={ this.setRef }
-					accessibilityLabel={ this.getTitle( title, postType ) }
+					setRef={ setRefHandler }
+					accessibilityLabel={ getTitleHandler( title, postType ) }
 					tagName={ 'p' }
 					tagsToEliminate={ [ 'strong' ] }
-					unstableOnFocus={ this.props.onSelect }
-					onBlur={ this.props.onBlur } // Always assign onBlur as a props.
+					unstableOnFocus={ props.onSelect }
+					onBlur={ props.onBlur } // Always assign onBlur as a props.
 					multiline={ false }
 					style={ titleStyles }
 					styles={ styles }
@@ -151,21 +144,23 @@ class PostTitle extends Component {
 					fontWeight={ 'bold' }
 					deleteEnter={ true }
 					onChange={ ( value ) => {
-						this.props.onUpdate( value );
+						props.onUpdate( value );
 					} }
-					onPaste={ this.onPaste }
+					onPaste={ onPasteHandler }
 					placeholder={ decodedPlaceholder }
 					value={ title }
 					onSelectionChange={ () => {} }
-					onEnter={ this.props.onEnterPress }
+					onEnter={ props.onEnterPress }
 					disableEditingMenu={ true }
-					__unstableIsSelected={ this.props.isSelected }
+					__unstableIsSelected={ props.isSelected }
 					__unstableOnCreateUndoLevel={ () => {} }
 				></RichText>
 			</View>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose(
 	withSelect( ( select ) => {

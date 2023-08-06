@@ -1,12 +1,13 @@
 /**
  * External dependencies
  */
+
 import { View, Dimensions } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useCallback } from '@wordpress/element';
 import { withSelect } from '@wordpress/data';
 import { compose } from '@wordpress/compose';
 import { ReadableContentView, alignmentHelpers } from '@wordpress/components';
@@ -14,7 +15,6 @@ import { ReadableContentView, alignmentHelpers } from '@wordpress/components';
 /**
  * Internal dependencies
  */
-import BlockListBlock from './block';
 import BlockInsertionPoint from './insertion-point';
 import Grid from './grid-item';
 
@@ -25,8 +25,12 @@ const stretchStyle = {
 	flex: 1,
 };
 
-export class BlockListItem extends Component {
-	getMarginHorizontal() {
+export export const BlockListItem = (props) => {
+
+
+    
+
+    const getMarginHorizontal = useMemo(() => {
 		const {
 			blockAlignment,
 			marginHorizontal,
@@ -36,7 +40,7 @@ export class BlockListItem extends Component {
 			parentBlockName,
 			parentWidth,
 			blockWidth,
-		} = this.props;
+		} = props;
 		const { isFullWidth, isWideWidth, isWider, isContainerRelated } =
 			alignmentHelpers;
 
@@ -76,11 +80,10 @@ export class BlockListItem extends Component {
 		}
 
 		return marginHorizontal;
-	}
-
-	getContentStyles( readableContentViewStyle ) {
+	}, []);
+    const getContentStylesHandler = useCallback(( readableContentViewStyle ) => {
 		const { blockAlignment, blockName, hasParents, parentBlockName } =
-			this.props;
+			props;
 		const { isFullWidth, isContainerRelated } = alignmentHelpers;
 
 		return [
@@ -96,9 +99,8 @@ export class BlockListItem extends Component {
 					paddingHorizontal: styles.fullAlignmentPadding.paddingLeft,
 				},
 		];
-	}
-
-	renderContent() {
+	}, []);
+    const renderContentHandler = useCallback(() => {
 		const {
 			blockAlignment,
 			clientId,
@@ -112,7 +114,7 @@ export class BlockListItem extends Component {
 			blockName,
 			blockWidth,
 			...restProps
-		} = this.props;
+		} = props;
 
 		const readableContentViewStyle =
 			contentResizeMode === 'stretch' && stretchStyle;
@@ -130,7 +132,7 @@ export class BlockListItem extends Component {
 				] }
 			>
 				<View
-					style={ this.getContentStyles( readableContentViewStyle ) }
+					style={ getContentStylesHandler( readableContentViewStyle ) }
 					pointerEvents={ isReadOnly ? 'box-only' : 'auto' }
 				>
 					{ shouldShowInsertionPointBefore && (
@@ -142,7 +144,7 @@ export class BlockListItem extends Component {
 						clientId={ clientId }
 						parentWidth={ parentWidth }
 						{ ...restProps }
-						marginHorizontal={ this.getMarginHorizontal() }
+						marginHorizontal={ getMarginHorizontal() }
 						blockWidth={ blockWidth }
 					/>
 					{ ! shouldShowInnerBlockAppender() &&
@@ -152,17 +154,16 @@ export class BlockListItem extends Component {
 				</View>
 			</ReadableContentView>
 		);
-	}
+	}, []);
 
-	render() {
-		const { parentWidth, blockWidth, isGridItem } = this.props;
+    const { parentWidth, blockWidth, isGridItem } = props;
 
 		if ( ! blockWidth ) {
 			return null;
 		}
 
 		if ( isGridItem ) {
-			const { numOfColumns, tileCount, tileIndex } = this.props;
+			const { numOfColumns, tileCount, tileIndex } = props;
 			return (
 				<Grid
 					maxWidth={ parentWidth }
@@ -170,13 +171,15 @@ export class BlockListItem extends Component {
 					tileCount={ tileCount }
 					index={ tileIndex }
 				>
-					{ this.renderContent() }
+					{ renderContentHandler() }
 				</Grid>
 			);
 		}
-		return this.renderContent();
-	}
-}
+		return renderContentHandler(); 
+};
+
+
+
 
 export default compose( [
 	withSelect(

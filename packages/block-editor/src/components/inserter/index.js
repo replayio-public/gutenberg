@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+
 import classnames from 'classnames';
 
 /**
@@ -9,7 +10,7 @@ import classnames from 'classnames';
 import { speak } from '@wordpress/a11y';
 import { __, _x, sprintf } from '@wordpress/i18n';
 import { Dropdown, Button } from '@wordpress/components';
-import { Component } from '@wordpress/element';
+import { useCallback } from '@wordpress/element';
 import { withDispatch, withSelect } from '@wordpress/data';
 import { compose, ifCondition } from '@wordpress/compose';
 import { createBlock, store as blocksStore } from '@wordpress/blocks';
@@ -71,25 +72,20 @@ const defaultRenderToggle = ( {
 	);
 };
 
-class Inserter extends Component {
-	constructor() {
-		super( ...arguments );
+const Inserter = (props) => {
 
-		this.onToggle = this.onToggle.bind( this );
-		this.renderToggle = this.renderToggle.bind( this );
-		this.renderContent = this.renderContent.bind( this );
-	}
 
-	onToggle( isOpen ) {
-		const { onToggle } = this.props;
+    
+
+    const onToggleHandler = useCallback(( isOpen ) => {
+		const { onToggle } = props;
 
 		// Surface toggle callback to parent component.
 		if ( onToggle ) {
 			onToggle( isOpen );
 		}
-	}
-
-	/**
+	}, []);
+    /**
 	 * Render callback to display Dropdown toggle element.
 	 *
 	 * @param {Object}   options
@@ -99,7 +95,7 @@ class Inserter extends Component {
 	 *
 	 * @return {WPElement} Dropdown toggle element.
 	 */
-	renderToggle( { onToggle, isOpen } ) {
+    const renderToggleHandler = useCallback(( { onToggle, isOpen } ) => {
 		const {
 			disabled,
 			blockTitle,
@@ -109,7 +105,7 @@ class Inserter extends Component {
 			hasItems,
 			renderToggle = defaultRenderToggle,
 			prioritizePatterns,
-		} = this.props;
+		} = props;
 
 		return renderToggle( {
 			onToggle,
@@ -121,9 +117,8 @@ class Inserter extends Component {
 			toggleProps,
 			prioritizePatterns,
 		} );
-	}
-
-	/**
+	}, []);
+    /**
 	 * Render callback to display Dropdown content element.
 	 *
 	 * @param {Object}   options
@@ -132,7 +127,7 @@ class Inserter extends Component {
 	 *
 	 * @return {WPElement} Dropdown content element.
 	 */
-	renderContent( { onClose } ) {
+    const renderContentHandler = useCallback(( { onClose } ) => {
 		const {
 			rootClientId,
 			clientId,
@@ -143,7 +138,7 @@ class Inserter extends Component {
 			// Feel free to make them stable after a few releases.
 			__experimentalIsQuick: isQuick,
 			prioritizePatterns,
-		} = this.props;
+		} = props;
 
 		if ( isQuick ) {
 			return (
@@ -171,20 +166,19 @@ class Inserter extends Component {
 				prioritizePatterns={ prioritizePatterns }
 			/>
 		);
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			position,
 			hasSingleBlockType,
 			directInsertBlock,
 			insertOnlyAllowedBlock,
 			__experimentalIsQuick: isQuick,
 			onSelectOrClose,
-		} = this.props;
+		} = props;
 
 		if ( hasSingleBlockType || directInsertBlock ) {
-			return this.renderToggle( { onToggle: insertOnlyAllowedBlock } );
+			return renderToggleHandler( { onToggle: insertOnlyAllowedBlock } );
 		}
 
 		return (
@@ -195,16 +189,18 @@ class Inserter extends Component {
 					{ 'is-quick': isQuick }
 				) }
 				position={ position }
-				onToggle={ this.onToggle }
+				onToggle={ onToggleHandler }
 				expandOnMobile
 				headerTitle={ __( 'Add a block' ) }
-				renderToggle={ this.renderToggle }
-				renderContent={ this.renderContent }
+				renderToggle={ renderToggleHandler }
+				renderContent={ renderContentHandler }
 				onClose={ onSelectOrClose }
 			/>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select, { clientId, rootClientId } ) => {

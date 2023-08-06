@@ -2,42 +2,20 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+
+import { useCallback } from '@wordpress/element';
 
 /**
  * Internal dependencies
  */
 import SlotFillContext from './context';
 
-export default class SlotFillProvider extends Component {
-	constructor() {
-		super( ...arguments );
+export default export const SlotFillProvider = (props) => {
 
-		this.registerSlot = this.registerSlot.bind( this );
-		this.registerFill = this.registerFill.bind( this );
-		this.unregisterSlot = this.unregisterSlot.bind( this );
-		this.unregisterFill = this.unregisterFill.bind( this );
-		this.getSlot = this.getSlot.bind( this );
-		this.getFills = this.getFills.bind( this );
-		this.hasFills = this.hasFills.bind( this );
-		this.subscribe = this.subscribe.bind( this );
 
-		this.slots = {};
-		this.fills = {};
-		this.listeners = [];
-		this.contextValue = {
-			registerSlot: this.registerSlot,
-			unregisterSlot: this.unregisterSlot,
-			registerFill: this.registerFill,
-			unregisterFill: this.unregisterFill,
-			getSlot: this.getSlot,
-			getFills: this.getFills,
-			hasFills: this.hasFills,
-			subscribe: this.subscribe,
-		};
-	}
+    
 
-	registerSlot( name, slot ) {
+    const registerSlotHandler = useCallback(( name, slot ) => {
 		const previousSlot = this.slots[ name ];
 		this.slots[ name ] = slot;
 		this.triggerListeners();
@@ -53,14 +31,12 @@ export default class SlotFillProvider extends Component {
 		if ( previousSlot ) {
 			previousSlot.forceUpdate();
 		}
-	}
-
-	registerFill( name, instance ) {
+	}, []);
+    const registerFillHandler = useCallback(( name, instance ) => {
 		this.fills[ name ] = [ ...( this.fills[ name ] || [] ), instance ];
 		this.forceUpdateSlot( name );
-	}
-
-	unregisterSlot( name, instance ) {
+	}, []);
+    const unregisterSlotHandler = useCallback(( name, instance ) => {
 		// If a previous instance of a Slot by this name unmounts, do nothing,
 		// as the slot and its fills should only be removed for the current
 		// known instance.
@@ -70,56 +46,50 @@ export default class SlotFillProvider extends Component {
 
 		delete this.slots[ name ];
 		this.triggerListeners();
-	}
-
-	unregisterFill( name, instance ) {
+	}, []);
+    const unregisterFillHandler = useCallback(( name, instance ) => {
 		this.fills[ name ] =
 			this.fills[ name ]?.filter( ( fill ) => fill !== instance ) ?? [];
 		this.forceUpdateSlot( name );
-	}
-
-	getSlot( name ) {
+	}, []);
+    const getSlotHandler = useCallback(( name ) => {
 		return this.slots[ name ];
-	}
-
-	getFills( name, slotInstance ) {
+	}, []);
+    const getFillsHandler = useCallback(( name, slotInstance ) => {
 		// Fills should only be returned for the current instance of the slot
 		// in which they occupy.
 		if ( this.slots[ name ] !== slotInstance ) {
 			return [];
 		}
 		return this.fills[ name ];
-	}
-
-	hasFills( name ) {
+	}, []);
+    const hasFillsHandler = useCallback(( name ) => {
 		return this.fills[ name ] && !! this.fills[ name ].length;
-	}
-
-	forceUpdateSlot( name ) {
+	}, []);
+    const forceUpdateSlotHandler = useCallback(( name ) => {
 		const slot = this.getSlot( name );
 
 		if ( slot ) {
 			slot.forceUpdate();
 		}
-	}
-
-	triggerListeners() {
+	}, []);
+    const triggerListenersHandler = useCallback(() => {
 		this.listeners.forEach( ( listener ) => listener() );
-	}
-
-	subscribe( listener ) {
+	}, []);
+    const subscribeHandler = useCallback(( listener ) => {
 		this.listeners.push( listener );
 
 		return () => {
 			this.listeners = this.listeners.filter( ( l ) => l !== listener );
 		};
-	}
+	}, []);
 
-	render() {
-		return (
+    return (
 			<SlotFillContext.Provider value={ this.contextValue }>
 				{ this.props.children }
 			</SlotFillContext.Provider>
-		);
-	}
-}
+		); 
+};
+
+
+

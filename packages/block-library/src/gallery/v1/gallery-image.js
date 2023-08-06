@@ -1,31 +1,31 @@
 /**
  * External dependencies
  */
+
 import classnames from 'classnames';
 import { get } from 'lodash';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState, useCallback, useEffect } from '@wordpress/element';
 import { Button, Spinner, ButtonGroup } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { BACKSPACE, DELETE } from '@wordpress/keycodes';
 import { withSelect, withDispatch } from '@wordpress/data';
 import {
-	RichText,
-	MediaPlaceholder,
-	store as blockEditorStore,
-	__experimentalGetElementClassName,
+    RichText,
+    MediaPlaceholder,
+    store as blockEditorStore
 } from '@wordpress/block-editor';
 import { isBlobURL } from '@wordpress/blob';
 import { compose } from '@wordpress/compose';
 import {
-	closeSmall,
-	chevronLeft,
-	chevronRight,
-	edit,
-	image as imageIcon,
+    closeSmall,
+    chevronLeft,
+    chevronRight,
+    edit,
+    image as imageIcon,
 } from '@wordpress/icons';
 import { store as coreStore } from '@wordpress/core-data';
 
@@ -34,73 +34,54 @@ import { store as coreStore } from '@wordpress/core-data';
  */
 import { pickRelevantMediaFiles } from './shared';
 import {
-	LINK_DESTINATION_ATTACHMENT,
-	LINK_DESTINATION_MEDIA,
+    LINK_DESTINATION_ATTACHMENT,
+    LINK_DESTINATION_MEDIA,
 } from './constants';
 
 const isTemporaryImage = ( id, url ) => ! id && isBlobURL( url );
 
-class GalleryImage extends Component {
-	constructor() {
-		super( ...arguments );
+const GalleryImage = (props) => {
 
-		this.onSelectImage = this.onSelectImage.bind( this );
-		this.onRemoveImage = this.onRemoveImage.bind( this );
-		this.bindContainer = this.bindContainer.bind( this );
-		this.onEdit = this.onEdit.bind( this );
-		this.onSelectImageFromLibrary =
-			this.onSelectImageFromLibrary.bind( this );
-		this.onSelectCustomURL = this.onSelectCustomURL.bind( this );
-		this.state = {
-			isEditing: false,
-		};
-	}
 
-	bindContainer( ref ) {
-		this.container = ref;
-	}
+    const [isEditing, setIsEditing] = useState(false);
 
-	onSelectImage() {
-		if ( ! this.props.isSelected ) {
-			this.props.onSelect();
+    const bindContainerHandler = useCallback(( ref ) => {
+		containerHandler = ref;
+	}, []);
+    const onSelectImageHandler = useCallback(() => {
+		if ( ! props.isSelected ) {
+			props.onSelect();
 		}
-	}
-
-	onRemoveImage( event ) {
+	}, []);
+    const onRemoveImageHandler = useCallback(( event ) => {
 		if (
-			this.container === this.container.ownerDocument.activeElement &&
-			this.props.isSelected &&
+			containerHandler === containerHandler.ownerDocument.activeElement &&
+			props.isSelected &&
 			[ BACKSPACE, DELETE ].indexOf( event.keyCode ) !== -1
 		) {
 			event.preventDefault();
-			this.props.onRemove();
+			props.onRemove();
 		}
-	}
-
-	onEdit() {
-		this.setState( {
-			isEditing: true,
-		} );
-	}
-
-	componentDidUpdate() {
+	}, []);
+    const onEditHandler = useCallback(() => {
+		setIsEditing(true);
+	}, []);
+    useEffect(() => {
 		const { image, url, __unstableMarkNextChangeAsNotPersistent } =
-			this.props;
+			props;
 		if ( image && ! url ) {
 			__unstableMarkNextChangeAsNotPersistent();
-			this.props.setAttributes( {
+			props.setAttributes( {
 				url: image.source_url,
 				alt: image.alt_text,
 			} );
 		}
-	}
-
-	deselectOnBlur() {
-		this.props.onDeselect();
-	}
-
-	onSelectImageFromLibrary( media ) {
-		const { setAttributes, id, url, alt, caption, sizeSlug } = this.props;
+	}, []);
+    const deselectOnBlurHandler = useCallback(() => {
+		props.onDeselect();
+	}, []);
+    const onSelectImageFromLibrary = useMemo(() => {
+		const { setAttributes, id, url, alt, caption, sizeSlug } = props;
 		if ( ! media || ! media.url ) {
 			return;
 		}
@@ -126,26 +107,20 @@ class GalleryImage extends Component {
 		}
 
 		setAttributes( mediaAttributes );
-		this.setState( {
-			isEditing: false,
-		} );
-	}
-
-	onSelectCustomURL( newURL ) {
-		const { setAttributes, url } = this.props;
+		setIsEditing(false);
+	}, []);
+    const onSelectCustomURLHandler = useCallback(( newURL ) => {
+		const { setAttributes, url } = props;
 		if ( newURL !== url ) {
 			setAttributes( {
 				url: newURL,
 				id: undefined,
 			} );
-			this.setState( {
-				isEditing: false,
-			} );
+			setIsEditing(false);
 		}
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			url,
 			alt,
 			id,
@@ -160,8 +135,8 @@ class GalleryImage extends Component {
 			onMoveBackward,
 			setAttributes,
 			'aria-label': ariaLabel,
-		} = this.props;
-		const { isEditing } = this.state;
+		} = props;
+		
 
 		let href;
 
@@ -183,10 +158,10 @@ class GalleryImage extends Component {
 					src={ url }
 					alt={ alt }
 					data-id={ id }
-					onKeyDown={ this.onRemoveImage }
+					onKeyDown={ onRemoveImageHandler }
 					tabIndex="0"
 					aria-label={ ariaLabel }
-					ref={ this.bindContainer }
+					ref={ bindContainerHandler }
 				/>
 				{ isBlobURL( url ) && <Spinner /> }
 			</>
@@ -202,16 +177,16 @@ class GalleryImage extends Component {
 			// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
 			<figure
 				className={ className }
-				onClick={ this.onSelectImage }
-				onFocus={ this.onSelectImage }
+				onClick={ onSelectImageHandler }
+				onFocus={ onSelectImageHandler }
 			>
 				{ ! isEditing && ( href ? <a href={ href }>{ img }</a> : img ) }
 				{ isEditing && (
 					<MediaPlaceholder
 						labels={ { title: __( 'Edit gallery image' ) } }
 						icon={ imageIcon }
-						onSelect={ this.onSelectImageFromLibrary }
-						onSelectURL={ this.onSelectCustomURL }
+						onSelect={ onSelectImageFromLibrary }
+						onSelectURL={ onSelectCustomURLHandler }
 						accept="image/*"
 						allowedTypes={ [ 'image' ] }
 						value={ { id, src: url } }
@@ -236,7 +211,7 @@ class GalleryImage extends Component {
 				<ButtonGroup className="block-library-gallery-item__inline-menu is-right">
 					<Button
 						icon={ edit }
-						onClick={ this.onEdit }
+						onClick={ onEditHandler }
 						label={ __( 'Replace image' ) }
 						disabled={ ! isSelected }
 					/>
@@ -263,9 +238,11 @@ class GalleryImage extends Component {
 					/>
 				) }
 			</figure>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select, ownProps ) => {

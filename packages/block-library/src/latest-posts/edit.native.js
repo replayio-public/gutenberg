@@ -1,28 +1,29 @@
 /**
  * External dependencies
  */
+
 import { TouchableWithoutFeedback, View, Text } from 'react-native';
 import { isEmpty } from 'lodash';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { compose, withPreferredColorScheme } from '@wordpress/compose';
 import { withDispatch, withSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { postList as icon } from '@wordpress/icons';
 import {
-	InspectorControls,
-	BlockAlignmentControl,
+    InspectorControls,
+    BlockAlignmentControl,
 } from '@wordpress/block-editor';
 import apiFetch from '@wordpress/api-fetch';
 import {
-	Icon,
-	PanelBody,
-	ToggleControl,
-	RangeControl,
-	QueryControls,
+    Icon,
+    PanelBody,
+    ToggleControl,
+    RangeControl,
+    QueryControls,
 } from '@wordpress/components';
 import { store as blocksStore } from '@wordpress/blocks';
 
@@ -32,115 +33,82 @@ import { store as blocksStore } from '@wordpress/blocks';
 import styles from './style.scss';
 import { MIN_EXCERPT_LENGTH, MAX_EXCERPT_LENGTH } from './constants';
 
-class LatestPostsEdit extends Component {
-	constructor() {
-		super( ...arguments );
-		this.state = {
-			categoriesList: [],
-		};
-		this.onSetDisplayPostContent =
-			this.onSetDisplayPostContent.bind( this );
-		this.onSetDisplayPostContentRadio =
-			this.onSetDisplayPostContentRadio.bind( this );
-		this.onSetExcerptLength = this.onSetExcerptLength.bind( this );
-		this.onSetDisplayPostDate = this.onSetDisplayPostDate.bind( this );
-		this.onSetDisplayFeaturedImage =
-			this.onSetDisplayFeaturedImage.bind( this );
-		this.onSetFeaturedImageAlign =
-			this.onSetFeaturedImageAlign.bind( this );
-		this.onSetAddLinkToFeaturedImage =
-			this.onSetAddLinkToFeaturedImage.bind( this );
-		this.onSetOrder = this.onSetOrder.bind( this );
-		this.onSetOrderBy = this.onSetOrderBy.bind( this );
-		this.onSetPostsToShow = this.onSetPostsToShow.bind( this );
-		this.onSetCategories = this.onSetCategories.bind( this );
-		this.getInspectorControls = this.getInspectorControls.bind( this );
-	}
+const LatestPostsEdit = (props) => {
 
-	componentDidMount() {
-		this.isStillMounted = true;
-		this.fetchRequest = apiFetch( { path: '/wp/v2/categories' } )
+
+    const [categoriesList, setCategoriesList] = useState([]);
+
+    useEffect(() => {
+		isStillMountedHandler = true;
+		fetchRequestHandler = apiFetch( { path: '/wp/v2/categories' } )
 			.then( ( categoriesList ) => {
-				if ( this.isStillMounted ) {
-					this.setState( {
-						categoriesList: isEmpty( categoriesList )
+				if ( isStillMountedHandler ) {
+					setCategoriesList(isEmpty( categoriesList )
 							? []
-							: categoriesList,
-					} );
+							: categoriesList);
 				}
 			} )
 			.catch( () => {
-				if ( this.isStillMounted ) {
-					this.setState( { categoriesList: [] } );
+				if ( isStillMountedHandler ) {
+					setCategoriesList([]);
 				}
 			} );
-	}
-
-	componentWillUnmount() {
-		this.isStillMounted = false;
-	}
-
-	onSetDisplayPostContent( value ) {
-		const { setAttributes } = this.props;
+	}, [categoriesList]);
+    useEffect(() => {
+    return () => {
+		isStillMountedHandler = false;
+	};
+}, []);
+    const onSetDisplayPostContentHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { displayPostContent: value } );
-	}
-
-	onSetDisplayPostContentRadio( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetDisplayPostContentRadioHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( {
 			displayPostContentRadio: value ? 'excerpt' : 'full_post',
 		} );
-	}
-
-	onSetExcerptLength( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetExcerptLengthHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { excerptLength: value } );
-	}
-
-	onSetDisplayPostDate( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetDisplayPostDateHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { displayPostDate: value } );
-	}
-
-	onSetDisplayFeaturedImage( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetDisplayFeaturedImageHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { displayFeaturedImage: value } );
-	}
-
-	onSetAddLinkToFeaturedImage( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetAddLinkToFeaturedImageHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { addLinkToFeaturedImage: value } );
-	}
-
-	onSetFeaturedImageAlign( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetFeaturedImageAlignHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { featuredImageAlign: value } );
-	}
-
-	onSetOrder( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetOrderHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { order: value } );
-	}
-
-	onSetOrderBy( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetOrderByHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { orderBy: value } );
-	}
-
-	onSetPostsToShow( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetPostsToShowHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( { postsToShow: value } );
-	}
-
-	onSetCategories( value ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const onSetCategoriesHandler = useCallback(( value ) => {
+		const { setAttributes } = props;
 		setAttributes( {
 			categories: '' !== value ? value.toString() : undefined,
 		} );
-	}
-
-	getInspectorControls() {
-		const { attributes } = this.props;
+	}, []);
+    const getInspectorControlsHandler = useCallback(() => {
+		const { attributes } = props;
 		const {
 			displayPostContent,
 			displayPostContentRadio,
@@ -155,7 +123,7 @@ class LatestPostsEdit extends Component {
 			categories,
 		} = attributes;
 
-		const { categoriesList } = this.state;
+		
 		const displayExcerptPostContent = displayPostContentRadio === 'excerpt';
 
 		return (
@@ -164,20 +132,20 @@ class LatestPostsEdit extends Component {
 					<ToggleControl
 						label={ __( 'Show post content' ) }
 						checked={ displayPostContent }
-						onChange={ this.onSetDisplayPostContent }
+						onChange={ onSetDisplayPostContentHandler }
 					/>
 					{ displayPostContent && (
 						<ToggleControl
 							label={ __( 'Only show excerpt' ) }
 							checked={ displayExcerptPostContent }
-							onChange={ this.onSetDisplayPostContentRadio }
+							onChange={ onSetDisplayPostContentRadioHandler }
 						/>
 					) }
 					{ displayPostContent && displayExcerptPostContent && (
 						<RangeControl
 							label={ __( 'Excerpt length (words)' ) }
 							value={ excerptLength }
-							onChange={ this.onSetExcerptLength }
+							onChange={ onSetExcerptLengthHandler }
 							min={ MIN_EXCERPT_LENGTH }
 							max={ MAX_EXCERPT_LENGTH }
 						/>
@@ -188,7 +156,7 @@ class LatestPostsEdit extends Component {
 					<ToggleControl
 						label={ __( 'Display post date' ) }
 						checked={ displayPostDate }
-						onChange={ this.onSetDisplayPostDate }
+						onChange={ onSetDisplayPostDateHandler }
 					/>
 				</PanelBody>
 
@@ -196,20 +164,20 @@ class LatestPostsEdit extends Component {
 					<ToggleControl
 						label={ __( 'Display featured image' ) }
 						checked={ displayFeaturedImage }
-						onChange={ this.onSetDisplayFeaturedImage }
+						onChange={ onSetDisplayFeaturedImageHandler }
 					/>
 					{ displayFeaturedImage && (
 						<>
 							<BlockAlignmentControl
 								value={ featuredImageAlign }
-								onChange={ this.onSetFeaturedImageAlign }
+								onChange={ onSetFeaturedImageAlignHandler }
 								controls={ [ 'left', 'center', 'right' ] }
 								isBottomSheetControl={ true }
 							/>
 							<ToggleControl
 								label={ __( 'Add link to featured image' ) }
 								checked={ addLinkToFeaturedImage }
-								onChange={ this.onSetAddLinkToFeaturedImage }
+								onChange={ onSetAddLinkToFeaturedImageHandler }
 								separatorType={ 'topFullWidth' }
 							/>
 						</>
@@ -224,26 +192,25 @@ class LatestPostsEdit extends Component {
 						selectedCategoryId={
 							undefined !== categories ? Number( categories ) : ''
 						}
-						onOrderChange={ this.onSetOrder }
-						onOrderByChange={ this.onSetOrderBy }
+						onOrderChange={ onSetOrderHandler }
+						onOrderByChange={ onSetOrderByHandler }
 						onCategoryChange={
 							// eslint-disable-next-line no-undef
-							__DEV__ ? this.onSetCategories : undefined
+							__DEV__ ? onSetCategoriesHandler : undefined
 						}
-						onNumberOfItemsChange={ this.onSetPostsToShow }
+						onNumberOfItemsChange={ onSetPostsToShowHandler }
 					/>
 				</PanelBody>
 			</InspectorControls>
 		);
-	}
+	}, [categoriesList]);
 
-	render() {
-		const {
+    const {
 			blockTitle,
 			getStylesFromColorScheme,
 			openGeneralSidebar,
 			isSelected,
-		} = this.props;
+		} = props;
 
 		const blockStyle = getStylesFromColorScheme(
 			styles.latestPostBlock,
@@ -267,7 +234,7 @@ class LatestPostsEdit extends Component {
 				onPress={ openGeneralSidebar }
 			>
 				<View style={ blockStyle }>
-					{ isSelected && this.getInspectorControls() }
+					{ isSelected && getInspectorControlsHandler() }
 					<Icon icon={ icon } { ...iconStyle } />
 					<Text style={ titleStyle }>{ blockTitle }</Text>
 					<Text style={ styles.latestPostBlockSubtitle }>
@@ -275,9 +242,11 @@ class LatestPostsEdit extends Component {
 					</Text>
 				</View>
 			</TouchableWithoutFeedback>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select, { name } ) => {

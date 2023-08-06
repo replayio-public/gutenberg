@@ -1,29 +1,29 @@
 /**
  * External dependencies
  */
+
 import { Platform, SafeAreaView, View } from 'react-native';
 import SafeArea from 'react-native-safe-area';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { withSelect } from '@wordpress/data';
 import {
-	BottomSheetSettings,
-	FloatingToolbar,
-	store as blockEditorStore,
+    BottomSheetSettings,
+    FloatingToolbar,
+    store as blockEditorStore,
 } from '@wordpress/block-editor';
 import { compose, withPreferredColorScheme } from '@wordpress/compose';
 import {
-	HTMLTextInput,
-	KeyboardAvoidingView,
-	NoticeList,
-	Tooltip,
-	__unstableAutocompletionItemsSlot as AutocompletionItemsSlot,
+    HTMLTextInput,
+    KeyboardAvoidingView,
+    NoticeList,
+    Tooltip,
+    __unstableAutocompletionItemsSlot as AutocompletionItemsSlot,
 } from '@wordpress/components';
 import { AutosaveMonitor, store as editorStore } from '@wordpress/editor';
-import { sendNativeEditorDidLayout } from '@wordpress/react-native-bridge';
 
 /**
  * Internal dependencies
@@ -31,84 +31,64 @@ import { sendNativeEditorDidLayout } from '@wordpress/react-native-bridge';
 import styles from './style.scss';
 import headerToolbarStyles from '../header/header-toolbar/style.scss';
 import Header from '../header';
-import VisualEditor from '../visual-editor';
 import { store as editPostStore } from '../../store';
 
-class Layout extends Component {
-	constructor() {
-		super( ...arguments );
+const Layout = (props) => {
 
-		this.onSafeAreaInsetsUpdate = this.onSafeAreaInsetsUpdate.bind( this );
-		this.onRootViewLayout = this.onRootViewLayout.bind( this );
 
-		this.state = {
-			rootViewHeight: 0,
-			safeAreaInsets: { top: 0, bottom: 0, right: 0, left: 0 },
-		};
+    const [rootViewHeight, setRootViewHeight] = useState(0);
+    const [safeAreaInsets, setSafeAreaInsets] = useState({ top: 0, bottom: 0, right: 0, left: 0 });
 
-		SafeArea.getSafeAreaInsetsForRootView().then(
-			this.onSafeAreaInsetsUpdate
-		);
-	}
-
-	componentDidMount() {
-		this._isMounted = true;
-		this.safeAreaSubscription = SafeArea.addEventListener(
+    useEffect(() => {
+		_isMountedHandler = true;
+		safeAreaSubscriptionHandler = SafeArea.addEventListener(
 			'safeAreaInsetsForRootViewDidChange',
-			this.onSafeAreaInsetsUpdate
+			onSafeAreaInsetsUpdateHandler
 		);
-	}
-
-	componentWillUnmount() {
-		this.safeAreaSubscription?.remove();
-		this._isMounted = false;
-	}
-
-	onSafeAreaInsetsUpdate( result ) {
+	}, []);
+    useEffect(() => {
+    return () => {
+		safeAreaSubscriptionHandler?.remove();
+		_isMountedHandler = false;
+	};
+}, []);
+    const onSafeAreaInsetsUpdateHandler = useCallback(( result ) => {
 		const { safeAreaInsets } = result;
-		if ( this._isMounted ) {
-			this.setState( { safeAreaInsets } );
+		if ( _isMountedHandler ) {
+			setSafeAreaInsets(safeAreaInsets);
 		}
-	}
-
-	onRootViewLayout( event ) {
-		if ( this._isMounted ) {
-			this.setHeightState( event );
+	}, [safeAreaInsets]);
+    const onRootViewLayoutHandler = useCallback(( event ) => {
+		if ( _isMountedHandler ) {
+			setHeightStateHandler( event );
 		}
-	}
-
-	setHeightState( event ) {
+	}, []);
+    const setHeightStateHandler = useCallback(( event ) => {
 		const { height } = event.nativeEvent.layout;
-		if ( height !== this.state.rootViewHeight ) {
-			this.setState(
-				{ rootViewHeight: height },
-				sendNativeEditorDidLayout
-			);
+		if ( height !== rootViewHeight ) {
+			setRootViewHeight(height);
 		}
-	}
-
-	renderHTML() {
-		const { globalStyles } = this.props;
+	}, [rootViewHeight]);
+    const renderHTMLHandler = useCallback(() => {
+		const { globalStyles } = props;
 		return (
 			<HTMLTextInput
-				parentHeight={ this.state.rootViewHeight }
+				parentHeight={ rootViewHeight }
 				style={ globalStyles }
 			/>
 		);
-	}
-
-	renderVisual() {
-		const { isReady } = this.props;
+	}, [rootViewHeight]);
+    const renderVisualHandler = useCallback(() => {
+		const { isReady } = props;
 
 		if ( ! isReady ) {
 			return null;
 		}
 
-		return <VisualEditor setTitleRef={ this.props.setTitleRef } />;
-	}
+		return <VisualEditor setTitleRef={ props.setTitleRef } />;
+	}, []);
 
-	render() {
-		const { getStylesFromColorScheme, mode, globalStyles } = this.props;
+    const { getStylesFromColorScheme, mode, globalStyles } = props;
 
 		const isHtmlView = mode === 'text';
 
@@ -125,9 +105,9 @@ class Layout extends Component {
 
 		const toolbarKeyboardAvoidingViewStyle = {
 			...styles.toolbarKeyboardAvoidingView,
-			left: this.state.safeAreaInsets.left,
-			right: this.state.safeAreaInsets.right,
-			bottom: this.state.safeAreaInsets.bottom,
+			left: safeAreaInsets.left,
+			right: safeAreaInsets.right,
+			bottom: safeAreaInsets.bottom,
 			backgroundColor: containerStyles.backgroundColor,
 		};
 
@@ -145,11 +125,11 @@ class Layout extends Component {
 			<Tooltip.Slot>
 				<SafeAreaView
 					style={ containerStyles }
-					onLayout={ this.onRootViewLayout }
+					onLayout={ onRootViewLayoutHandler }
 				>
 					<AutosaveMonitor disableIntervalChecks />
 					<View style={ editorStyles }>
-						{ isHtmlView ? this.renderHTML() : this.renderVisual() }
+						{ isHtmlView ? renderHTMLHandler() : renderVisualHandler() }
 						{ ! isHtmlView && Platform.OS === 'android' && (
 							<FloatingToolbar />
 						) }
@@ -164,7 +144,7 @@ class Layout extends Component {
 					/>
 					{ ! isHtmlView && (
 						<KeyboardAvoidingView
-							parentHeight={ this.state.rootViewHeight }
+							parentHeight={ rootViewHeight }
 							style={ toolbarKeyboardAvoidingViewStyle }
 							withAnimatedHeight
 						>
@@ -181,9 +161,11 @@ class Layout extends Component {
 					{ Platform.OS === 'android' && <AutocompletionItemsSlot /> }
 				</SafeAreaView>
 			</Tooltip.Slot>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select ) => {

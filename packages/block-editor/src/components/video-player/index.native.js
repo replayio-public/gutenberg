@@ -1,14 +1,15 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+
+import { useState, useCallback } from '@wordpress/element';
 import { Icon } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 /**
  * External dependencies
  */
-import { View, TouchableOpacity, Platform, Linking, Alert } from 'react-native';
+import { View, TouchableOpacity, Linking, Alert } from 'react-native';
 import { default as VideoPlayer } from 'react-native-video';
 
 /**
@@ -20,40 +21,32 @@ import PlayIcon from './gridicon-play';
 // Default Video ratio 16:9
 export const VIDEO_ASPECT_RATIO = 16 / 9;
 
-class Video extends Component {
-	constructor() {
-		super( ...arguments );
-		this.isIOS = Platform.OS === 'ios';
-		this.state = {
-			isFullScreen: false,
-			videoContainerHeight: 0,
-		};
-		this.onPressPlay = this.onPressPlay.bind( this );
-		this.onVideoLayout = this.onVideoLayout.bind( this );
-	}
+const Video = (props) => {
 
-	onVideoLayout( event ) {
+
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [videoContainerHeight, setVideoContainerHeight] = useState(0);
+
+    const onVideoLayoutHandler = useCallback(( event ) => {
 		const { height } = event.nativeEvent.layout;
-		if ( height !== this.state.videoContainerHeight ) {
-			this.setState( { videoContainerHeight: height } );
+		if ( height !== videoContainerHeight ) {
+			setVideoContainerHeight(height);
 		}
-	}
-
-	onPressPlay() {
-		if ( this.isIOS ) {
-			if ( this.player ) {
-				this.player.presentFullscreenPlayer();
+	}, [videoContainerHeight]);
+    const onPressPlayHandler = useCallback(() => {
+		if ( isIOSHandler ) {
+			if ( playerHandler ) {
+				playerHandler.presentFullscreenPlayer();
 			}
 		} else {
-			const { source } = this.props;
+			const { source } = props;
 			if ( source && source.uri ) {
-				this.openURL( source.uri );
+				openURLHandler( source.uri );
 			}
 		}
-	}
-
-	// Tries opening the URL outside of the app
-	openURL( url ) {
+	}, []);
+    // Tries opening the URL outside of the app
+    const openURLHandler = useCallback(( url ) => {
 		Linking.canOpenURL( url )
 			.then( ( supported ) => {
 				if ( ! supported ) {
@@ -81,19 +74,18 @@ class Video extends Component {
 					err
 				);
 			} );
-	}
+	}, []);
 
-	render() {
-		const { isSelected, style } = this.props;
-		const { isFullScreen, videoContainerHeight } = this.state;
+    const { isSelected, style } = props;
+		
 		const showPlayButton = videoContainerHeight > 0;
 
 		return (
 			<View style={ styles.videoContainer }>
 				<VideoPlayer
-					{ ...this.props }
+					{ ...props }
 					ref={ ( ref ) => {
-						this.player = ref;
+						playerHandler = ref;
 					} }
 					// Using built-in player controls is messing up the layout on iOS.
 					// So we are setting controls=false and adding a play button that
@@ -101,12 +93,12 @@ class Video extends Component {
 					controls={ false }
 					ignoreSilentSwitch={ 'ignore' }
 					paused={ ! isFullScreen }
-					onLayout={ this.onVideoLayout }
+					onLayout={ onVideoLayoutHandler }
 					onFullscreenPlayerWillPresent={ () => {
-						this.setState( { isFullScreen: true } );
+						setIsFullScreen(true);
 					} }
 					onFullscreenPlayerDidDismiss={ () => {
-						this.setState( { isFullScreen: false } );
+						setIsFullScreen(false);
 					} }
 				/>
 				{ showPlayButton && (
@@ -114,7 +106,7 @@ class Video extends Component {
 					// even if we set controls={ false }, so we are adding our play button as a sibling overlay view.
 					<TouchableOpacity
 						disabled={ ! isSelected }
-						onPress={ this.onPressPlay }
+						onPress={ onPressPlayHandler }
 						style={ [ style, styles.overlayContainer ] }
 					>
 						<View style={ styles.blackOverlay } />
@@ -126,8 +118,10 @@ class Video extends Component {
 					</TouchableOpacity>
 				) }
 			</View>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default Video;

@@ -1,20 +1,20 @@
 /**
  * External dependencies
  */
+
 import { ScrollView, TextInput } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { useEffect, useCallback } from '@wordpress/element';
 import { parse } from '@wordpress/blocks';
 import { withDispatch, withSelect } from '@wordpress/data';
-import { addFilter, removeFilter } from '@wordpress/hooks';
+import { removeFilter } from '@wordpress/hooks';
 import {
-	withInstanceId,
-	compose,
-	withPreferredColorScheme,
+    withInstanceId,
+    compose,
+    withPreferredColorScheme,
 } from '@wordpress/compose';
 
 /**
@@ -23,63 +23,40 @@ import {
 import KeyboardAvoidingView from '../keyboard-avoiding-view';
 import styles from './style.scss';
 
-export class HTMLTextInput extends Component {
-	constructor() {
-		super( ...arguments );
+export export const HTMLTextInput = (props) => {
 
-		this.edit = this.edit.bind( this );
-		this.stopEditing = this.stopEditing.bind( this );
-		this.getHTMLForParent = this.getHTMLForParent.bind( this );
-		addFilter(
-			'native.persist-html',
-			'html-text-input',
-			this.getHTMLForParent
-		);
 
-		this.state = {};
-	}
+    
 
-	static getDerivedStateFromProps( props, state ) {
-		if ( state.isDirty ) {
-			return null;
-		}
-
-		return {
-			value: props.value,
-			isDirty: false,
-		};
-	}
-
-	componentWillUnmount() {
+    useEffect(() => {
+    return () => {
 		removeFilter( 'native.persist-html', 'html-text-input' );
 		// TODO: Blocking main thread.
-		this.stopEditing();
-	}
-
-	edit( html ) {
-		this.props.onChange( html );
-		this.setState( { value: html, isDirty: true } );
-	}
-
-	getHTMLForParent() {
-		return this.state.value;
-	}
-
-	stopEditing() {
-		if ( this.state.isDirty ) {
-			this.props.onPersist( this.state.value );
-			this.setState( { isDirty: false } );
+		stopEditingHandler();
+	};
+}, []);
+    const editHandler = useCallback(( html ) => {
+		props.onChange( html );
+		setValue(html);
+    setIsDirty(true);
+	}, []);
+    const getHTMLForParentHandler = useCallback(() => {
+		return value;
+	}, []);
+    const stopEditingHandler = useCallback(() => {
+		if ( isDirty ) {
+			props.onPersist( value );
+			setIsDirty(false);
 		}
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			editTitle,
 			getStylesFromColorScheme,
 			parentHeight,
 			style,
 			title,
-		} = this.props;
+		} = props;
 		const titleStyle = [
 			styles.htmlViewTitle,
 			style?.text && { color: style.text },
@@ -113,15 +90,15 @@ export class HTMLTextInput extends Component {
 						onChangeText={ editTitle }
 					/>
 					<TextInput
-						ref={ this.contentTextInputRef }
+						ref={ contentTextInputRefHandler }
 						autoCorrect={ false }
 						accessibilityLabel="html-view-content"
 						textAlignVertical="top"
 						multiline
 						style={ htmlStyle }
-						value={ this.state.value }
-						onChangeText={ this.edit }
-						onBlur={ this.stopEditing }
+						value={ value }
+						onChangeText={ editHandler }
+						onBlur={ stopEditingHandler }
 						placeholder={ __( 'Start writing…' ) }
 						placeholderTextColor={ placeholderStyle.color }
 						scrollEnabled={ false }
@@ -132,9 +109,20 @@ export class HTMLTextInput extends Component {
 					/>
 				</ScrollView>
 			</KeyboardAvoidingView>
-		);
-	}
-}
+		); 
+};
+
+HTMLTextInput.getDerivedStateFromProps = ( props, state ) => {
+		if ( state.isDirty ) {
+			return null;
+		}
+
+		return {
+			value: props.value,
+			isDirty: false,
+		};
+	};
+
 
 export default compose( [
 	withSelect( ( select ) => {

@@ -1,21 +1,22 @@
 /**
  * External dependencies
  */
+
 import {
-	AccessibilityInfo,
-	View,
-	TextInput,
-	PixelRatio,
-	AppState,
-	Platform,
-	Text,
-	TouchableWithoutFeedback,
+    AccessibilityInfo,
+    View,
+    TextInput,
+    PixelRatio,
+    AppState,
+    Platform,
+    Text,
+    TouchableWithoutFeedback,
 } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { withPreferredColorScheme } from '@wordpress/compose';
 import { __, sprintf } from '@wordpress/i18n';
 
@@ -28,89 +29,67 @@ import borderStyles from './borderStyles.scss';
 
 const isIOS = Platform.OS === 'ios';
 
-class RangeTextInput extends Component {
-	constructor( props ) {
-		super( props );
-
-		this.announceCurrentValue = this.announceCurrentValue.bind( this );
-		this.onInputFocus = this.onInputFocus.bind( this );
-		this.onInputBlur = this.onInputBlur.bind( this );
-		this.handleChangePixelRatio = this.handleChangePixelRatio.bind( this );
-		this.onSubmitEditing = this.onSubmitEditing.bind( this );
-		this.onChangeText = this.onChangeText.bind( this );
-
-		const { value, defaultValue, min, decimalNum } = props;
-		const initialValue = toFixed(
+const RangeTextInput = (props) => {
+const { value, defaultValue, min, decimalNum } = props;
+    const initialValue = toFixed(
 			value || defaultValue || min,
 			decimalNum
 		);
+    const fontScale = getFontScaleHandler();
 
-		const fontScale = this.getFontScale();
+    const [inputValue, setInputValue] = useState(initialValue);
+    const [controlValue, setControlValue] = useState(initialValue);
+    const [hasFocus, setHasFocus] = useState(false);
+    const [hasFocus, setHasFocus] = useState();
+    const [inputValue, setInputValue] = useState();
 
-		this.state = {
-			fontScale,
-			inputValue: initialValue,
-			controlValue: initialValue,
-			hasFocus: false,
-		};
-	}
-
-	componentDidMount() {
-		this.appStateChangeSubscription = AppState.addEventListener(
+    useEffect(() => {
+		appStateChangeSubscriptionHandler = AppState.addEventListener(
 			'change',
-			this.handleChangePixelRatio
+			handleChangePixelRatioHandler
 		);
-	}
-
-	componentWillUnmount() {
-		this.appStateChangeSubscription.remove();
-		clearTimeout( this.timeoutAnnounceValue );
-	}
-
-	componentDidUpdate( prevProps, prevState ) {
-		const { value } = this.props;
-		const { hasFocus, inputValue } = this.state;
+	}, []);
+    useEffect(() => {
+    return () => {
+		appStateChangeSubscriptionHandler.remove();
+		clearTimeout( timeoutAnnounceValueHandler );
+	};
+}, []);
+    useEffect(() => {
+		const { value } = props;
+		
 
 		if ( prevProps.value !== value ) {
-			this.setState( { inputValue: value } );
+			setInputValue(value);
 		}
 
 		if ( prevState.hasFocus !== hasFocus ) {
-			const validValue = this.validateInput( inputValue );
-			this.setState( { inputValue: validValue } );
+			const validValue = validateInputHandler( inputValue );
+			setInputValue(validValue);
 		}
 
 		if ( ! prevState.hasFocus && hasFocus ) {
-			this._valueTextInput.focus();
+			_valueTextInputHandler.focus();
 		}
-	}
-
-	getFontScale() {
+	}, [hasFocus, inputValue]);
+    const getFontScaleHandler = useCallback(() => {
 		return PixelRatio.getFontScale() < 1 ? 1 : PixelRatio.getFontScale();
-	}
-
-	handleChangePixelRatio( nextAppState ) {
+	}, []);
+    const handleChangePixelRatioHandler = useCallback(( nextAppState ) => {
 		if ( nextAppState === 'active' ) {
-			this.setState( { fontScale: this.getFontScale() } );
+			setFontScale(getFontScaleHandler());
 		}
-	}
-
-	onInputFocus() {
-		this.setState( {
-			hasFocus: true,
-		} );
-	}
-
-	onInputBlur() {
-		const { inputValue } = this.state;
-		this.onChangeText( `${ inputValue }` );
-		this.setState( {
-			hasFocus: false,
-		} );
-	}
-
-	validateInput( text ) {
-		const { min, max, decimalNum } = this.props;
+	}, []);
+    const onInputFocusHandler = useCallback(() => {
+		setHasFocus(true);
+	}, []);
+    const onInputBlurHandler = useCallback(() => {
+		
+		onChangeTextHandler( `${ inputValue }` );
+		setHasFocus(false);
+	}, [inputValue]);
+    const validateInputHandler = useCallback(( text ) => {
+		const { min, max, decimalNum } = props;
 		let result = min;
 		if ( ! text ) {
 			return min;
@@ -123,56 +102,49 @@ class RangeTextInput extends Component {
 
 		result = Math.max( removeNonDigit( text, decimalNum ), min );
 		return max ? Math.min( result, max ) : result;
-	}
+	}, []);
+    const updateValueHandler = useCallback(( value ) => {
+		const { onChange } = props;
+		const validValue = validateInputHandler( value );
 
-	updateValue( value ) {
-		const { onChange } = this.props;
-		const validValue = this.validateInput( value );
-
-		this.announceCurrentValue( `${ validValue }` );
+		announceCurrentValueHandler( `${ validValue }` );
 
 		onChange( validValue );
-	}
-
-	onChangeText( textValue ) {
-		const { decimalNum } = this.props;
+	}, []);
+    const onChangeTextHandler = useCallback(( textValue ) => {
+		const { decimalNum } = props;
 		const inputValue = removeNonDigit( textValue, decimalNum );
 
 		textValue = inputValue.replace( ',', '.' );
 		textValue = toFixed( textValue, decimalNum );
-		const value = this.validateInput( textValue );
-		this.setState( {
-			inputValue,
-			controlValue: value,
-		} );
-		this.updateValue( value );
-	}
-
-	onSubmitEditing( { nativeEvent: { text } } ) {
-		const { decimalNum } = this.props;
-		const { inputValue } = this.state;
+		const value = validateInputHandler( textValue );
+		setInputValue(inputValue);
+    setControlValue(value);
+		updateValueHandler( value );
+	}, [inputValue]);
+    const onSubmitEditingHandler = useCallback(( { nativeEvent: { text } } ) => {
+		const { decimalNum } = props;
+		
 
 		if ( ! isNaN( Number( text ) ) ) {
 			text = toFixed( text.replace( ',', '.' ), decimalNum );
-			const validValue = this.validateInput( text );
+			const validValue = validateInputHandler( text );
 
 			if ( inputValue !== validValue ) {
-				this.setState( { inputValue: validValue } );
-				this.announceCurrentValue( `${ validValue }` );
-				this.props.onChange( validValue );
+				setInputValue(validValue);
+				announceCurrentValueHandler( `${ validValue }` );
+				props.onChange( validValue );
 			}
 		}
-	}
-
-	announceCurrentValue( value ) {
+	}, [inputValue]);
+    const announceCurrentValueHandler = useCallback(( value ) => {
 		/* translators: %s: current cell value. */
 		const announcement = sprintf( __( 'Current value is %s' ), value );
 		AccessibilityInfo.announceForAccessibility( announcement );
-	}
+	}, []);
 
-	render() {
-		const { getStylesFromColorScheme, children, label } = this.props;
-		const { fontScale, inputValue, hasFocus } = this.state;
+    const { getStylesFromColorScheme, children, label } = props;
+		
 
 		const textInputStyle = getStylesFromColorScheme(
 			styles.textInput,
@@ -203,7 +175,7 @@ class RangeTextInput extends Component {
 
 		return (
 			<TouchableWithoutFeedback
-				onPress={ this.onInputFocus }
+				onPress={ onInputFocusHandler }
 				accessible={ false }
 			>
 				<View
@@ -216,12 +188,12 @@ class RangeTextInput extends Component {
 					{ isIOS || hasFocus ? (
 						<TextInput
 							accessibilityLabel={ label }
-							ref={ ( c ) => ( this._valueTextInput = c ) }
+							ref={ ( c ) => ( _valueTextInputHandler = c ) }
 							style={ valueFinalStyle }
-							onChangeText={ this.onChangeText }
-							onSubmitEditing={ this.onSubmitEditing }
-							onFocus={ this.onInputFocus }
-							onBlur={ this.onInputBlur }
+							onChangeText={ onChangeTextHandler }
+							onSubmitEditing={ onSubmitEditingHandler }
+							onFocus={ onInputFocusHandler }
+							onBlur={ onInputBlurHandler }
 							keyboardType="numeric"
 							returnKeyType="done"
 							numberOfLines={ 1 }
@@ -241,8 +213,10 @@ class RangeTextInput extends Component {
 					{ children }
 				</View>
 			</TouchableWithoutFeedback>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default withPreferredColorScheme( RangeTextInput );

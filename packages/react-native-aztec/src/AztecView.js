@@ -1,27 +1,28 @@
 /**
  * External dependencies
  */
+
 import {
-	requireNativeComponent,
-	UIManager,
-	TouchableWithoutFeedback,
-	Platform,
+    requireNativeComponent,
+    UIManager,
+    TouchableWithoutFeedback,
+    Platform,
 } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component, createRef } from '@wordpress/element';
+import { useCallback } from '@wordpress/element';
 import {
-	BACKSPACE,
-	DELETE,
-	DOWN,
-	ENTER,
-	ESCAPE,
-	LEFT,
-	RIGHT,
-	SPACE,
-	UP,
+    BACKSPACE,
+    DELETE,
+    DOWN,
+    ENTER,
+    ESCAPE,
+    LEFT,
+    RIGHT,
+    SPACE,
+    UP,
 } from '@wordpress/keycodes';
 
 /**
@@ -44,70 +45,50 @@ const KEYCODES = {
 	[ UP ]: 'ArrowUp',
 };
 
-class AztecView extends Component {
-	constructor() {
-		super( ...arguments );
-		this.aztecViewRef = createRef();
+const AztecView = (props) => {
 
-		this._onContentSizeChange = this._onContentSizeChange.bind( this );
-		this._onEnter = this._onEnter.bind( this );
-		this._onBackspace = this._onBackspace.bind( this );
-		this._onKeyDown = this._onKeyDown.bind( this );
-		this._onChange = this._onChange.bind( this );
-		this._onHTMLContentWithCursor =
-			this._onHTMLContentWithCursor.bind( this );
-		this._onFocus = this._onFocus.bind( this );
-		this._onBlur = this._onBlur.bind( this );
-		this._onSelectionChange = this._onSelectionChange.bind( this );
-		this._onPress = this._onPress.bind( this );
-		this._onAztecFocus = this._onAztecFocus.bind( this );
-		this.blur = this.blur.bind( this );
-		this.focus = this.focus.bind( this );
-	}
 
-	dispatch( command, params ) {
+    
+
+    const dispatchHandler = useCallback(( command, params ) => {
 		params = params || [];
 		UIManager.dispatchViewManagerCommand(
-			this.aztecViewRef.current,
+			aztecViewRefHandler.current,
 			command,
 			params
 		);
-	}
-
-	requestHTMLWithCursor() {
-		this.dispatch( AztecManager.Commands.returnHTMLWithCursor );
-	}
-
-	_onContentSizeChange( event ) {
-		if ( ! this.props.onContentSizeChange ) {
+	}, []);
+    const requestHTMLWithCursorHandler = useCallback(() => {
+		dispatchHandler( AztecManager.Commands.returnHTMLWithCursor );
+	}, []);
+    const _onContentSizeChangeHandler = useCallback(( event ) => {
+		if ( ! props.onContentSizeChange ) {
 			return;
 		}
 		const size = event.nativeEvent.contentSize;
-		const { onContentSizeChange } = this.props;
+		const { onContentSizeChange } = props;
 		onContentSizeChange( size );
-	}
-
-	_onEnter( event ) {
-		if ( ! this.isFocused() ) {
+	}, []);
+    const _onEnterHandler = useCallback(( event ) => {
+		if ( ! isFocusedHandler() ) {
 			return;
 		}
 
-		if ( ! this.props.onKeyDown ) {
+		if ( ! props.onKeyDown ) {
 			return;
 		}
 
-		const { onKeyDown } = this.props;
+		const { onKeyDown } = props;
 
 		const newEvent = { ...event, keyCode: ENTER, code: KEYCODES[ ENTER ] };
 		onKeyDown( newEvent );
-	}
-
-	_onBackspace( event ) {
-		if ( ! this.props.onKeyDown ) {
+	}, []);
+    const _onBackspaceHandler = useCallback(( event ) => {
+		if ( ! props.onKeyDown ) {
 			return;
 		}
 
-		const { onKeyDown } = this.props;
+		const { onKeyDown } = props;
 
 		const newEvent = {
 			...event,
@@ -116,14 +97,13 @@ class AztecView extends Component {
 			preventDefault: () => {},
 		};
 		onKeyDown( newEvent );
-	}
-
-	_onKeyDown( event ) {
-		if ( ! this.props.onKeyDown ) {
+	}, []);
+    const _onKeyDownHandler = useCallback(( event ) => {
+		if ( ! props.onKeyDown ) {
 			return;
 		}
 
-		const { onKeyDown } = this.props;
+		const { onKeyDown } = props;
 		const { keyCode } = event.nativeEvent;
 		const newEvent = {
 			...event,
@@ -134,118 +114,107 @@ class AztecView extends Component {
 			preventDefault: () => {},
 		};
 		onKeyDown( newEvent );
-	}
-
-	_onHTMLContentWithCursor( event ) {
-		if ( ! this.props.onHTMLContentWithCursor ) {
+	}, []);
+    const _onHTMLContentWithCursorHandler = useCallback(( event ) => {
+		if ( ! props.onHTMLContentWithCursor ) {
 			return;
 		}
 
 		const text = event.nativeEvent.text;
 		const selectionStart = event.nativeEvent.selectionStart;
 		const selectionEnd = event.nativeEvent.selectionEnd;
-		const { onHTMLContentWithCursor } = this.props;
+		const { onHTMLContentWithCursor } = props;
 		onHTMLContentWithCursor( text, selectionStart, selectionEnd );
-	}
-
-	_onFocus( event ) {
-		if ( ! this.props.onFocus ) {
+	}, []);
+    const _onFocusHandler = useCallback(( event ) => {
+		if ( ! props.onFocus ) {
 			return;
 		}
 
-		const { onFocus } = this.props;
+		const { onFocus } = props;
 		onFocus( event );
-	}
+	}, []);
+    const _onBlurHandler = useCallback(( event ) => {
+		selectionEndCaretYHandler = null;
 
-	_onBlur( event ) {
-		this.selectionEndCaretY = null;
+		AztecInputState.blur( aztecViewRefHandler.current );
 
-		AztecInputState.blur( this.aztecViewRef.current );
-
-		if ( ! this.props.onBlur ) {
+		if ( ! props.onBlur ) {
 			return;
 		}
 
-		const { onBlur } = this.props;
+		const { onBlur } = props;
 		onBlur( event );
-	}
-
-	_onChange( event ) {
+	}, []);
+    const _onChangeHandler = useCallback(( event ) => {
 		// iOS uses the onKeyDown prop directly from native only when one of the triggerKeyCodes is entered, but
 		// Android includes the information needed for onKeyDown in the event passed to onChange.
 		if ( Platform.OS === 'android' ) {
 			const triggersIncludeEventKeyCode =
-				this.props.triggerKeyCodes &&
-				this.props.triggerKeyCodes
+				props.triggerKeyCodes &&
+				props.triggerKeyCodes
 					.map( ( char ) => char.charCodeAt( 0 ) )
 					.includes( event.nativeEvent.keyCode );
 			if ( triggersIncludeEventKeyCode ) {
-				this._onKeyDown( event );
+				_onKeyDownHandler( event );
 			}
 		}
 
-		const { onChange } = this.props;
+		const { onChange } = props;
 		if ( onChange ) {
 			onChange( event );
 		}
-	}
-
-	_onSelectionChange( event ) {
-		if ( this.props.onSelectionChange ) {
+	}, []);
+    const _onSelectionChangeHandler = useCallback(( event ) => {
+		if ( props.onSelectionChange ) {
 			const { selectionStart, selectionEnd, text } = event.nativeEvent;
-			const { onSelectionChange } = this.props;
+			const { onSelectionChange } = props;
 			onSelectionChange( selectionStart, selectionEnd, text, event );
 		}
 
 		if (
-			this.props.onCaretVerticalPositionChange &&
-			this.selectionEndCaretY !== event.nativeEvent.selectionEndCaretY
+			props.onCaretVerticalPositionChange &&
+			selectionEndCaretYHandler !== event.nativeEvent.selectionEndCaretY
 		) {
 			const caretY = event.nativeEvent.selectionEndCaretY;
-			this.props.onCaretVerticalPositionChange(
+			props.onCaretVerticalPositionChange(
 				event.nativeEvent.target,
 				caretY,
-				this.selectionEndCaretY
+				selectionEndCaretYHandler
 			);
-			this.selectionEndCaretY = caretY;
+			selectionEndCaretYHandler = caretY;
 		}
-	}
-
-	blur() {
-		AztecInputState.blur( this.aztecViewRef.current );
-	}
-
-	focus() {
-		AztecInputState.focus( this.aztecViewRef.current );
-	}
-
-	isFocused() {
+	}, []);
+    const blurHandler = useCallback(() => {
+		AztecInputState.blur( aztecViewRefHandler.current );
+	}, []);
+    const focusHandler = useCallback(() => {
+		AztecInputState.focus( aztecViewRefHandler.current );
+	}, []);
+    const isFocusedHandler = useCallback(() => {
 		const focusedElement = AztecInputState.getCurrentFocusedElement();
-		return focusedElement && focusedElement === this.aztecViewRef.current;
-	}
-
-	_onPress( event ) {
-		if ( ! this.isFocused() ) {
-			this.focus(); // Call to move the focus in RN way (TextInputState)
-			this._onFocus( event ); // Check if there are listeners set on the focus event.
+		return focusedElement && focusedElement === aztecViewRefHandler.current;
+	}, []);
+    const _onPressHandler = useCallback(( event ) => {
+		if ( ! isFocusedHandler() ) {
+			focusHandler(); // Call to move the focus in RN way (TextInputState)
+			_onFocusHandler( event ); // Check if there are listeners set on the focus event.
 		}
-	}
-
-	_onAztecFocus( event ) {
+	}, []);
+    const _onAztecFocusHandler = useCallback(( event ) => {
 		// IMPORTANT: the onFocus events from Aztec are thrown away on Android as these are handled by onPress() in the upper level.
 		// It's necessary to do this otherwise onFocus may be set by `{...otherProps}` and thus the onPress + onFocus
 		// combination generate an infinite loop as described in https://github.com/wordpress-mobile/gutenberg-mobile/issues/302
 		// For iOS, this is necessary to let the system know when Aztec was focused programatically.
 		if ( Platform.OS === 'ios' ) {
-			this._onPress( event );
+			_onPressHandler( event );
 		}
-	}
+	}, []);
 
-	render() {
-		const { onActiveFormatsChange, ...otherProps } = this.props;
+    const { onActiveFormatsChange, ...otherProps } = props;
 		// `style` has to be destructured separately, without `otherProps`, because of:
 		// https://github.com/WordPress/gutenberg/issues/23611
-		const { style } = this.props;
+		const { style } = props;
 
 		if ( style.hasOwnProperty( 'lineHeight' ) ) {
 			delete style.lineHeight;
@@ -257,29 +226,31 @@ class AztecView extends Component {
 		}
 
 		return (
-			<TouchableWithoutFeedback onPress={ this._onPress }>
+			<TouchableWithoutFeedback onPress={ _onPressHandler }>
 				<RCTAztecView
 					{ ...otherProps }
 					style={ style }
-					onContentSizeChange={ this._onContentSizeChange }
-					onHTMLContentWithCursor={ this._onHTMLContentWithCursor }
-					onChange={ this._onChange }
-					onSelectionChange={ this._onSelectionChange }
-					onEnter={ this.props.onKeyDown && this._onEnter }
-					onBackspace={ this.props.onKeyDown && this._onBackspace }
-					onKeyDown={ this.props.onKeyDown && this._onKeyDown }
-					deleteEnter={ this.props.deleteEnter }
+					onContentSizeChange={ _onContentSizeChangeHandler }
+					onHTMLContentWithCursor={ _onHTMLContentWithCursorHandler }
+					onChange={ _onChangeHandler }
+					onSelectionChange={ _onSelectionChangeHandler }
+					onEnter={ props.onKeyDown && _onEnterHandler }
+					onBackspace={ props.onKeyDown && _onBackspaceHandler }
+					onKeyDown={ props.onKeyDown && _onKeyDownHandler }
+					deleteEnter={ props.deleteEnter }
 					// IMPORTANT: the onFocus events are thrown away as these are handled by onPress() in the upper level.
 					// It's necessary to do this otherwise onFocus may be set by `{...otherProps}` and thus the onPress + onFocus
 					// combination generate an infinite loop as described in https://github.com/wordpress-mobile/gutenberg-mobile/issues/302
-					onFocus={ this._onAztecFocus }
-					onBlur={ this._onBlur }
-					ref={ this.aztecViewRef }
+					onFocus={ _onAztecFocusHandler }
+					onBlur={ _onBlurHandler }
+					ref={ aztecViewRefHandler }
 				/>
 			</TouchableWithoutFeedback>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 const RCTAztecView = requireNativeComponent( 'RCTAztecView', AztecView );
 

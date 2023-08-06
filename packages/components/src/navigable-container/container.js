@@ -2,7 +2,8 @@
 /**
  * WordPress dependencies
  */
-import { Component, forwardRef } from '@wordpress/element';
+
+import { useEffect, useCallback, forwardRef } from '@wordpress/element';
 import { focus } from '@wordpress/dom';
 
 const noop = () => {};
@@ -19,73 +20,65 @@ function cycleValue( value, total, offset ) {
 	return nextValue;
 }
 
-class NavigableContainer extends Component {
-	constructor() {
-		super( ...arguments );
-		this.onKeyDown = this.onKeyDown.bind( this );
-		this.bindContainer = this.bindContainer.bind( this );
+const NavigableContainer = (props) => {
 
-		this.getFocusableContext = this.getFocusableContext.bind( this );
-		this.getFocusableIndex = this.getFocusableIndex.bind( this );
-	}
 
-	componentDidMount() {
+    
+
+    useEffect(() => {
 		// We use DOM event listeners instead of React event listeners
 		// because we want to catch events from the underlying DOM tree
 		// The React Tree can be different from the DOM tree when using
 		// portals. Block Toolbars for instance are rendered in a separate
 		// React Trees.
-		this.container.addEventListener( 'keydown', this.onKeyDown );
-		this.container.addEventListener( 'focus', this.onFocus );
-	}
-
-	componentWillUnmount() {
-		this.container.removeEventListener( 'keydown', this.onKeyDown );
-		this.container.removeEventListener( 'focus', this.onFocus );
-	}
-
-	bindContainer( ref ) {
-		const { forwardedRef } = this.props;
-		this.container = ref;
+		containerHandler.addEventListener( 'keydown', onKeyDownHandler );
+		containerHandler.addEventListener( 'focus', onFocusHandler );
+	}, []);
+    useEffect(() => {
+    return () => {
+		containerHandler.removeEventListener( 'keydown', onKeyDownHandler );
+		containerHandler.removeEventListener( 'focus', onFocusHandler );
+	};
+}, []);
+    const bindContainerHandler = useCallback(( ref ) => {
+		const { forwardedRef } = props;
+		containerHandler = ref;
 
 		if ( typeof forwardedRef === 'function' ) {
 			forwardedRef( ref );
 		} else if ( forwardedRef && 'current' in forwardedRef ) {
 			forwardedRef.current = ref;
 		}
-	}
-
-	getFocusableContext( target ) {
-		const { onlyBrowserTabstops } = this.props;
+	}, []);
+    const getFocusableContextHandler = useCallback(( target ) => {
+		const { onlyBrowserTabstops } = props;
 		const finder = onlyBrowserTabstops ? focus.tabbable : focus.focusable;
-		const focusables = finder.find( this.container );
+		const focusables = finder.find( containerHandler );
 
-		const index = this.getFocusableIndex( focusables, target );
+		const index = getFocusableIndexHandler( focusables, target );
 		if ( index > -1 && target ) {
 			return { index, target, focusables };
 		}
 		return null;
-	}
-
-	getFocusableIndex( focusables, target ) {
+	}, []);
+    const getFocusableIndexHandler = useCallback(( focusables, target ) => {
 		const directIndex = focusables.indexOf( target );
 		if ( directIndex !== -1 ) {
 			return directIndex;
 		}
-	}
-
-	onKeyDown( event ) {
-		if ( this.props.onKeyDown ) {
-			this.props.onKeyDown( event );
+	}, []);
+    const onKeyDownHandler = useCallback(( event ) => {
+		if ( props.onKeyDown ) {
+			props.onKeyDown( event );
 		}
 
-		const { getFocusableContext } = this;
+		
 		const {
 			cycle = true,
 			eventToOffset,
 			onNavigate = noop,
 			stopNavigationEvents,
-		} = this.props;
+		} = props;
 
 		const offset = eventToOffset( event );
 
@@ -130,10 +123,9 @@ class NavigableContainer extends Component {
 			focusables[ nextIndex ].focus();
 			onNavigate( nextIndex, focusables[ nextIndex ] );
 		}
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			children,
 			stopNavigationEvents,
 			eventToOffset,
@@ -143,14 +135,16 @@ class NavigableContainer extends Component {
 			onlyBrowserTabstops,
 			forwardedRef,
 			...restProps
-		} = this.props;
+		} = props;
 		return (
-			<div ref={ this.bindContainer } { ...restProps }>
+			<div ref={ bindContainerHandler } { ...restProps }>
 				{ children }
 			</div>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 const forwardedNavigableContainer = ( props, ref ) => {
 	return <NavigableContainer { ...props } forwardedRef={ ref } />;

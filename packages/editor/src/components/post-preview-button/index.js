@@ -1,15 +1,16 @@
 /**
  * External dependencies
  */
+
 import { get } from 'lodash';
 import classnames from 'classnames';
 
 /**
  * WordPress dependencies
  */
-import { Component, createRef, renderToString } from '@wordpress/element';
+import { useEffect, useCallback, renderToString } from '@wordpress/element';
 import { Button, Path, SVG, VisuallyHidden } from '@wordpress/components';
-import { __, _x } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { withSelect, withDispatch } from '@wordpress/data';
 import { ifCondition, compose } from '@wordpress/compose';
 import { applyFilters } from '@wordpress/hooks';
@@ -106,48 +107,41 @@ function writeInterstitialMessage( targetDocument ) {
 	targetDocument.close();
 }
 
-export class PostPreviewButton extends Component {
-	constructor() {
-		super( ...arguments );
+export export const PostPreviewButton = (props) => {
 
-		this.buttonRef = createRef();
 
-		this.openPreviewWindow = this.openPreviewWindow.bind( this );
-	}
+    
 
-	componentDidUpdate( prevProps ) {
-		const { previewLink } = this.props;
+    useEffect(() => {
+		const { previewLink } = props;
 		// This relies on the window being responsible to unset itself when
 		// navigation occurs or a new preview window is opened, to avoid
 		// unintentional forceful redirects.
 		if ( previewLink && ! prevProps.previewLink ) {
-			this.setPreviewWindowLink( previewLink );
+			setPreviewWindowLinkHandler( previewLink );
 		}
-	}
-
-	/**
+	}, []);
+    /**
 	 * Sets the preview window's location to the given URL, if a preview window
 	 * exists and is not closed.
 	 *
 	 * @param {string} url URL to assign as preview window location.
 	 */
-	setPreviewWindowLink( url ) {
-		const { previewWindow } = this;
+    const setPreviewWindowLinkHandler = useCallback(( url ) => {
+		
 
 		if ( previewWindow && ! previewWindow.closed ) {
 			previewWindow.location = url;
-			if ( this.buttonRef.current ) {
-				this.buttonRef.current.focus();
+			if ( buttonRefHandler.current ) {
+				buttonRefHandler.current.focus();
 			}
 		}
-	}
-
-	getWindowTarget() {
-		const { postId } = this.props;
+	}, []);
+    const getWindowTargetHandler = useCallback(() => {
+		const { postId } = props;
 		return `wp-preview-${ postId }`;
-	}
-
-	openPreviewWindow( event ) {
+	}, []);
+    const openPreviewWindowHandler = useCallback(( event ) => {
 		// Our Preview button has its 'href' and 'target' set correctly for a11y
 		// purposes. Unfortunately, though, we can't rely on the default 'click'
 		// handler since sometimes it incorrectly opens a new tab instead of reusing
@@ -156,41 +150,40 @@ export class PostPreviewButton extends Component {
 		event.preventDefault();
 
 		// Open up a Preview tab if needed. This is where we'll show the preview.
-		if ( ! this.previewWindow || this.previewWindow.closed ) {
-			this.previewWindow = window.open( '', this.getWindowTarget() );
+		if ( ! previewWindowHandler || previewWindowHandler.closed ) {
+			previewWindowHandler = window.open( '', getWindowTargetHandler() );
 		}
 
 		// Focus the Preview tab. This might not do anything, depending on the browser's
 		// and user's preferences.
 		// https://html.spec.whatwg.org/multipage/interaction.html#dom-window-focus
-		this.previewWindow.focus();
+		previewWindowHandler.focus();
 
 		if (
 			// If we don't need to autosave the post before previewing, then we simply
 			// load the Preview URL in the Preview tab.
-			! this.props.isAutosaveable ||
+			! props.isAutosaveable ||
 			// Do not save or overwrite the post, if the post is already locked.
-			this.props.isPostLocked
+			props.isPostLocked
 		) {
-			this.setPreviewWindowLink( event.target.href );
+			setPreviewWindowLinkHandler( event.target.href );
 			return;
 		}
 
 		// Request an autosave. This happens asynchronously and causes the component
 		// to update when finished.
-		if ( this.props.isDraft ) {
-			this.props.savePost( { isPreview: true } );
+		if ( props.isDraft ) {
+			props.savePost( { isPreview: true } );
 		} else {
-			this.props.autosave( { isPreview: true } );
+			props.autosave( { isPreview: true } );
 		}
 
 		// Display a 'Generating preview' message in the Preview tab while we wait for the
 		// autosave to finish.
-		writeInterstitialMessage( this.previewWindow.document );
-	}
+		writeInterstitialMessage( previewWindowHandler.document );
+	}, []);
 
-	render() {
-		const { previewLink, currentPostLink, isSaveable, role } = this.props;
+    const { previewLink, currentPostLink, isSaveable, role } = props;
 
 		// Link to the `?preview=true` URL if we have it, since this lets us see
 		// changes that were autosaved since the post was last published. Otherwise,
@@ -199,24 +192,24 @@ export class PostPreviewButton extends Component {
 
 		const classNames = classnames(
 			{
-				'editor-post-preview': ! this.props.className,
+				'editor-post-preview': ! props.className,
 			},
-			this.props.className
+			props.className
 		);
 
 		return (
 			<Button
-				variant={ ! this.props.className ? 'tertiary' : undefined }
+				variant={ ! props.className ? 'tertiary' : undefined }
 				className={ classNames }
 				href={ href }
-				target={ this.getWindowTarget() }
+				target={ getWindowTargetHandler() }
 				disabled={ ! isSaveable }
-				onClick={ this.openPreviewWindow }
-				ref={ this.buttonRef }
+				onClick={ openPreviewWindowHandler }
+				ref={ buttonRefHandler }
 				role={ role }
 			>
-				{ this.props.textContent ? (
-					this.props.textContent
+				{ props.textContent ? (
+					props.textContent
 				) : (
 					<>
 						{ _x( 'Preview', 'imperative verb' ) }
@@ -229,9 +222,11 @@ export class PostPreviewButton extends Component {
 					</>
 				) }
 			</Button>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select, { forcePreviewLink, forceIsAutosaveable } ) => {
