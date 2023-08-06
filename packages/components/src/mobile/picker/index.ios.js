@@ -1,13 +1,14 @@
 /**
  * External dependencies
  */
+
 import { ActionSheetIOS } from 'react-native';
 
 /**
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Component, forwardRef, useContext } from '@wordpress/element';
+import { useCallback, forwardRef, useContext } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { BottomSheetContext } from '@wordpress/components';
 import { usePreferredColorScheme } from '@wordpress/compose';
@@ -17,8 +18,12 @@ import { usePreferredColorScheme } from '@wordpress/compose';
  */
 import styles from './styles.scss';
 
-class Picker extends Component {
-	presentPicker() {
+const Picker = (props) => {
+
+
+    
+
+    const presentPickerHandler = useCallback(() => {
 		const {
 			options,
 			onChange,
@@ -30,7 +35,7 @@ class Picker extends Component {
 			closeBottomSheet,
 			onHandleClosingBottomSheet,
 			colorScheme,
-		} = this.props;
+		} = props;
 		const labels = options.map( ( { label } ) => label );
 		const fullOptions = [ __( 'Cancel' ) ].concat( labels );
 
@@ -65,12 +70,13 @@ class Picker extends Component {
 				}
 			}
 		);
-	}
+	}, []);
 
-	render() {
-		return null;
-	}
-}
+    return null; 
+};
+
+
+
 
 const PickerComponent = forwardRef( ( props, ref ) => {
 	const isBottomSheetOpened = useSelect( ( select ) =>

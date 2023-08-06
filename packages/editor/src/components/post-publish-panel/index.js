@@ -1,19 +1,20 @@
 /**
  * External dependencies
  */
+
 import { get } from 'lodash';
 
 /**
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Component } from '@wordpress/element';
+import { useEffect, useCallback } from '@wordpress/element';
 import {
-	Button,
-	Spinner,
-	CheckboxControl,
-	withFocusReturn,
-	withConstrainedTabbing,
+    Button,
+    Spinner,
+    CheckboxControl,
+    withFocusReturn,
+    withConstrainedTabbing,
 } from '@wordpress/components';
 import { withSelect, withDispatch } from '@wordpress/data';
 import { compose } from '@wordpress/compose';
@@ -23,38 +24,32 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
-import PostPublishButton from '../post-publish-button';
-import PostPublishPanelPrepublish from './prepublish';
-import PostPublishPanelPostpublish from './postpublish';
 import { store as editorStore } from '../../store';
 
-export class PostPublishPanel extends Component {
-	constructor() {
-		super( ...arguments );
-		this.onSubmit = this.onSubmit.bind( this );
-	}
+export export const PostPublishPanel = (props) => {
 
-	componentDidUpdate( prevProps ) {
+
+    
+
+    useEffect(() => {
 		// Automatically collapse the publish sidebar when a post
 		// is published and the user makes an edit.
 		if (
 			prevProps.isPublished &&
-			! this.props.isSaving &&
-			this.props.isDirty
+			! props.isSaving &&
+			props.isDirty
 		) {
-			this.props.onClose();
+			props.onClose();
 		}
-	}
-
-	onSubmit() {
-		const { onClose, hasPublishAction, isPostTypeViewable } = this.props;
+	}, []);
+    const onSubmitHandler = useCallback(() => {
+		const { onClose, hasPublishAction, isPostTypeViewable } = props;
 		if ( ! hasPublishAction || ! isPostTypeViewable ) {
 			onClose();
 		}
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			forceIsDirty,
 			forceIsSaving,
 			isBeingScheduled,
@@ -68,7 +63,7 @@ export class PostPublishPanel extends Component {
 			PostPublishExtension,
 			PrePublishExtension,
 			...additionalProps
-		} = this.props;
+		} = props;
 		const {
 			hasPublishAction,
 			isDirty,
@@ -93,7 +88,7 @@ export class PostPublishPanel extends Component {
 							<div className="editor-post-publish-panel__header-publish-button">
 								<PostPublishButton
 									focusOnMount={ true }
-									onSubmit={ this.onSubmit }
+									onSubmit={ onSubmitHandler }
 									forceIsDirty={ forceIsDirty }
 									forceIsSaving={ forceIsSaving }
 								/>
@@ -131,9 +126,11 @@ export class PostPublishPanel extends Component {
 					/>
 				</div>
 			</div>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select ) => {

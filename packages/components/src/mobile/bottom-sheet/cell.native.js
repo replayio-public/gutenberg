@@ -1,14 +1,15 @@
 /**
  * External dependencies
  */
+
 import {
-	TouchableOpacity,
-	Text,
-	View,
-	TextInput,
-	I18nManager,
-	AccessibilityInfo,
-	Platform,
+    TouchableOpacity,
+    Text,
+    View,
+    TextInput,
+    I18nManager,
+    AccessibilityInfo,
+    Platform,
 } from 'react-native';
 import { isEmpty, get } from 'lodash';
 
@@ -17,8 +18,8 @@ import { isEmpty, get } from 'lodash';
  */
 import { Icon } from '@wordpress/components';
 import { check } from '@wordpress/icons';
-import { Component } from '@wordpress/element';
-import { __, _x, sprintf } from '@wordpress/i18n';
+import { useState, useEffect, useCallback } from '@wordpress/element';
+import { _x, sprintf } from '@wordpress/i18n';
 import { withPreferredColorScheme } from '@wordpress/compose';
 
 /**
@@ -29,52 +30,42 @@ import platformStyles from './cellStyles.scss';
 import TouchableRipple from './ripple';
 
 const isIOS = Platform.OS === 'ios';
-class BottomSheetCell extends Component {
-	constructor( props ) {
-		super( ...arguments );
-		this.state = {
-			isEditingValue: props.autoFocus || false,
-			isScreenReaderEnabled: false,
-		};
+const BottomSheetCell = (props) => {
 
-		this.handleScreenReaderToggled =
-			this.handleScreenReaderToggled.bind( this );
 
-		this.isCurrent = false;
-	}
+    const [isEditingValue, setIsEditingValue] = useState(props.autoFocus || false);
+    const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
 
-	componentDidUpdate( prevProps, prevState ) {
-		if ( ! prevState.isEditingValue && this.state.isEditingValue ) {
-			this._valueTextInput.focus();
+    useEffect(() => {
+		if ( ! prevState.isEditingValue && isEditingValue ) {
+			_valueTextInputHandler.focus();
 		}
-	}
-
-	componentDidMount() {
-		this.isCurrent = true;
-		this.a11yInfoChangeSubscription = AccessibilityInfo.addEventListener(
+	}, [isEditingValue]);
+    useEffect(() => {
+		isCurrentHandler = true;
+		a11yInfoChangeSubscriptionHandler = AccessibilityInfo.addEventListener(
 			'screenReaderChanged',
-			this.handleScreenReaderToggled
+			handleScreenReaderToggledHandler
 		);
 
 		AccessibilityInfo.isScreenReaderEnabled().then(
 			( isScreenReaderEnabled ) => {
-				if ( this.isCurrent ) {
-					this.setState( { isScreenReaderEnabled } );
+				if ( isCurrentHandler ) {
+					setIsScreenReaderEnabled(isScreenReaderEnabled);
 				}
 			}
 		);
-	}
-
-	componentWillUnmount() {
-		this.isCurrent = false;
-		this.a11yInfoChangeSubscription.remove();
-	}
-
-	handleScreenReaderToggled( isScreenReaderEnabled ) {
-		this.setState( { isScreenReaderEnabled } );
-	}
-
-	typeToKeyboardType( type, step ) {
+	}, [isScreenReaderEnabled]);
+    useEffect(() => {
+    return () => {
+		isCurrentHandler = false;
+		a11yInfoChangeSubscriptionHandler.remove();
+	};
+}, []);
+    const handleScreenReaderToggledHandler = useCallback(( isScreenReaderEnabled ) => {
+		setIsScreenReaderEnabled(isScreenReaderEnabled);
+	}, [isScreenReaderEnabled]);
+    const typeToKeyboardTypeHandler = useCallback(( type, step ) => {
 		let keyboardType = `default`;
 		if ( type === `number` ) {
 			if ( step && Math.abs( step ) < 1 ) {
@@ -84,10 +75,9 @@ class BottomSheetCell extends Component {
 			}
 		}
 		return keyboardType;
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			accessible,
 			accessibilityLabel,
 			accessibilityHint,
@@ -121,7 +111,7 @@ class BottomSheetCell extends Component {
 			borderless,
 			help,
 			...valueProps
-		} = this.props;
+		} = props;
 
 		const showValue = value !== undefined;
 		const isValueEditable = editable && onChangeValue !== undefined;
@@ -179,22 +169,22 @@ class BottomSheetCell extends Component {
 		};
 
 		const finishEditing = () => {
-			this.setState( { isEditingValue: false } );
+			setIsEditingValue(false);
 		};
 
 		const startEditing = () => {
-			if ( this.state.isEditingValue === false ) {
-				this.setState( { isEditingValue: true } );
+			if ( isEditingValue === false ) {
+				setIsEditingValue(true);
 			}
 		};
 
 		const separatorStyle = () => {
 			// eslint-disable-next-line @wordpress/no-unused-vars-before-return
-			const defaultSeparatorStyle = this.props.getStylesFromColorScheme(
+			const defaultSeparatorStyle = props.getStylesFromColorScheme(
 				styles.separator,
 				styles.separatorDark
 			);
-			const cellSeparatorStyle = this.props.getStylesFromColorScheme(
+			const cellSeparatorStyle = props.getStylesFromColorScheme(
 				styles.cellSeparator,
 				styles.cellSeparatorDark
 			);
@@ -220,7 +210,7 @@ class BottomSheetCell extends Component {
 
 		const getValueComponent = () => {
 			const styleRTL = I18nManager.isRTL && styles.cellValueRTL;
-			const cellValueStyle = this.props.getStylesFromColorScheme(
+			const cellValueStyle = props.getStylesFromColorScheme(
 				styles.cellValue,
 				styles.cellTextDark
 			);
@@ -235,9 +225,9 @@ class BottomSheetCell extends Component {
 			// and the Text component to display it.
 			// We also show the TextInput to display placeholder.
 			const shouldShowPlaceholder = isValueEditable && value === '';
-			return this.state.isEditingValue || shouldShowPlaceholder ? (
+			return isEditingValue || shouldShowPlaceholder ? (
 				<TextInput
-					ref={ ( c ) => ( this._valueTextInput = c ) }
+					ref={ ( c ) => ( _valueTextInputHandler = c ) }
 					numberOfLines={ 1 }
 					style={ finalStyle }
 					value={ value }
@@ -246,12 +236,12 @@ class BottomSheetCell extends Component {
 					onChangeText={ onChangeValue }
 					editable={ isValueEditable }
 					pointerEvents={
-						this.state.isEditingValue ? 'auto' : 'none'
+						isEditingValue ? 'auto' : 'none'
 					}
 					onFocus={ startEditing }
 					onBlur={ finishEditing }
 					onSubmitEditing={ onSubmit }
-					keyboardType={ this.typeToKeyboardType( type, step ) }
+					keyboardType={ typeToKeyboardTypeHandler( type, step ) }
 					{ ...valueProps }
 				/>
 			) : (
@@ -317,7 +307,7 @@ class BottomSheetCell extends Component {
 			isIOS && styles.cellHelpLabelIOS,
 		];
 		const containerPointerEvents =
-			this.state.isScreenReaderEnabled && accessible ? 'none' : 'auto';
+			isScreenReaderEnabled && accessible ? 'none' : 'auto';
 		const { title, handler } = customActionButton || {};
 
 		const opacity =
@@ -330,7 +320,7 @@ class BottomSheetCell extends Component {
 				accessible={
 					accessible !== undefined
 						? accessible
-						: ! this.state.isEditingValue
+						: ! isEditingValue
 				}
 				accessibilityLabel={ getAccessibilityLabel() }
 				accessibilityRole={ accessibilityRole || 'button' }
@@ -428,8 +418,10 @@ class BottomSheetCell extends Component {
 				) }
 				{ ! drawTopSeparator && <View style={ separatorStyle() } /> }
 			</TouchableRipple>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default withPreferredColorScheme( BottomSheetCell );

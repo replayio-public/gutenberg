@@ -1,7 +1,8 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+
+import { useEffect, useCallback } from '@wordpress/element';
 import { withSelect } from '@wordpress/data';
 
 /**
@@ -9,19 +10,21 @@ import { withSelect } from '@wordpress/data';
  */
 import { store as editPostStore } from '../../store';
 
-class MetaBoxVisibility extends Component {
-	componentDidMount() {
-		this.updateDOM();
-	}
+const MetaBoxVisibility = (props) => {
 
-	componentDidUpdate( prevProps ) {
-		if ( this.props.isVisible !== prevProps.isVisible ) {
-			this.updateDOM();
+
+    
+
+    useEffect(() => {
+		updateDOMHandler();
+	}, []);
+    useEffect(() => {
+		if ( props.isVisible !== prevProps.isVisible ) {
+			updateDOMHandler();
 		}
-	}
-
-	updateDOM() {
-		const { id, isVisible } = this.props;
+	}, []);
+    const updateDOMHandler = useCallback(() => {
+		const { id, isVisible } = props;
 
 		const element = document.getElementById( id );
 		if ( ! element ) {
@@ -33,12 +36,13 @@ class MetaBoxVisibility extends Component {
 		} else {
 			element.classList.add( 'is-hidden' );
 		}
-	}
+	}, []);
 
-	render() {
-		return null;
-	}
-}
+    return null; 
+};
+
+
+
 
 export default withSelect( ( select, { id } ) => ( {
 	isVisible: select( editPostStore ).isEditorPanelEnabled(

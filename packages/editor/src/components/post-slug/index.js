@@ -1,9 +1,9 @@
 /**
  * WordPress dependencies
  */
+
 import { withDispatch, withSelect } from '@wordpress/data';
-import { Component } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { useState, useCallback } from '@wordpress/element';
 import { compose } from '@wordpress/compose';
 import { safeDecodeURIComponent, cleanForSlug } from '@wordpress/url';
 import { TextControl } from '@wordpress/components';
@@ -11,25 +11,17 @@ import { TextControl } from '@wordpress/components';
 /**
  * Internal dependencies
  */
-import PostSlugCheck from './check';
 import { store as editorStore } from '../../store';
 
-export class PostSlug extends Component {
-	constructor( { postSlug, postTitle, postID } ) {
-		super( ...arguments );
+export export const PostSlug = (props) => {
 
-		this.state = {
-			editedSlug:
-				safeDecodeURIComponent( postSlug ) ||
+
+    const [editedSlug, setEditedSlug] = useState(safeDecodeURIComponent( postSlug ) ||
 				cleanForSlug( postTitle ) ||
-				postID,
-		};
+				postID);
 
-		this.setSlug = this.setSlug.bind( this );
-	}
-
-	setSlug( event ) {
-		const { postSlug, onUpdateSlug } = this.props;
+    const setSlugHandler = useCallback(( event ) => {
+		const { postSlug, onUpdateSlug } = props;
 		const { value } = event.target;
 
 		const editedSlug = cleanForSlug( value );
@@ -39,10 +31,9 @@ export class PostSlug extends Component {
 		}
 
 		onUpdateSlug( editedSlug );
-	}
+	}, [editedSlug]);
 
-	render() {
-		const { editedSlug } = this.state;
+    
 		return (
 			<PostSlugCheck>
 				<TextControl
@@ -51,15 +42,17 @@ export class PostSlug extends Component {
 					spellCheck="false"
 					value={ editedSlug }
 					onChange={ ( slug ) =>
-						this.setState( { editedSlug: slug } )
+						setEditedSlug(slug);
 					}
-					onBlur={ this.setSlug }
+					onBlur={ setSlugHandler }
 					className="editor-post-slug"
 				/>
 			</PostSlugCheck>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select ) => {

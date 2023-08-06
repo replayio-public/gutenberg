@@ -1,39 +1,40 @@
 /**
  * External dependencies
  */
+
 import { render, fireEvent, screen } from '@testing-library/react';
 
 /**
  * Internal dependencies
  */
-import { Slot, Fill, Provider } from '../';
+import { Fill } from '../';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 
-class Filler extends Component {
-	constructor() {
-		super( ...arguments );
+const Filler = (props) => {
 
-		this.state = {
-			num: 1,
-		};
-	}
-	render() {
-		return [
+
+    const [num, setNum] = useState(1);
+
+    
+
+    return [
 			<button
 				key="1"
 				type="button"
-				onClick={ () => this.setState( { num: this.state.num + 1 } ) }
+				onClick={ () => setNum(num + 1); }
 			/>,
-			<Fill name={ this.props.name } key="2">
-				{ this.props.text || this.state.num.toString() }
+			<Fill name={ props.name } key="2">
+				{ props.text || num.toString() }
 			</Fill>,
-		];
-	}
-}
+		]; 
+};
+
+
+
 
 describe( 'Slot', () => {
 	it( 'should render empty Fills', () => {

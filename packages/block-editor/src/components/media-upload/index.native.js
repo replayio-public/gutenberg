@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+
 import { Platform } from 'react-native';
 
 import prompt from 'react-native-prompt-android';
@@ -8,21 +9,21 @@ import prompt from 'react-native-prompt-android';
 /**
  * WordPress dependencies
  */
-import { Component, React } from '@wordpress/element';
+import { useState, useRef, useEffect, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Picker } from '@wordpress/components';
 import {
-	getOtherMediaOptions,
-	requestMediaPicker,
-	mediaSources,
+    getOtherMediaOptions,
+    requestMediaPicker,
+    mediaSources,
 } from '@wordpress/react-native-bridge';
 import {
-	capturePhoto,
-	captureVideo,
-	image,
-	wordpress,
-	mobile,
-	globe,
+    capturePhoto,
+    captureVideo,
+    image,
+    wordpress,
+    mobile,
+    globe,
 } from '@wordpress/icons';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { compose } from '@wordpress/compose';
@@ -43,21 +44,14 @@ const URL_MEDIA_SOURCE = 'URL';
 
 const PICKER_OPENING_DELAY = 200;
 
-export class MediaUpload extends Component {
-	pickerTimeout;
+export export const MediaUpload = (props) => {
 
-	constructor( props ) {
-		super( props );
-		this.onPickerPresent = this.onPickerPresent.bind( this );
-		this.onPickerSelect = this.onPickerSelect.bind( this );
-		this.getAllSources = this.getAllSources.bind( this );
-		this.state = {
-			otherMediaOptions: [],
-		};
-	}
 
-	componentDidMount() {
-		const { allowedTypes = [], autoOpen } = this.props;
+    const [otherMediaOptions, setOtherMediaOptions] = useState([]);
+
+    const pickerTimeout = useRef();
+    useEffect(() => {
+		const { allowedTypes = [], autoOpen } = props;
 		getOtherMediaOptions( allowedTypes, ( otherMediaOptions ) => {
 			const otherMediaOptionsWithIcons = otherMediaOptions.map(
 				( option ) => {
@@ -70,20 +64,20 @@ export class MediaUpload extends Component {
 				}
 			);
 
-			this.setState( { otherMediaOptions: otherMediaOptionsWithIcons } );
+			setOtherMediaOptions(otherMediaOptionsWithIcons);
 		} );
 
 		if ( autoOpen ) {
-			this.onPickerPresent();
+			onPickerPresentHandler();
 		}
-	}
-
-	componentWillUnmount() {
-		clearTimeout( this.pickerTimeout );
-	}
-
-	getAllSources() {
-		const { onSelectURL } = this.props;
+	}, [otherMediaOptions]);
+    useEffect(() => {
+    return () => {
+		clearTimeout( pickerTimeout.current );
+	};
+}, []);
+    const getAllSourcesHandler = useCallback(() => {
+		const { onSelectURL } = props;
 
 		const cameraImageSource = {
 			id: mediaSources.deviceCamera, // ID is the value sent to native.
@@ -144,17 +138,16 @@ export class MediaUpload extends Component {
 			...( onSelectURL ? [ urlSource ] : [] ),
 		];
 
-		return internalSources.concat( this.state.otherMediaOptions );
-	}
-
-	getMediaOptionsItems() {
+		return internalSources.concat( otherMediaOptions );
+	}, [otherMediaOptions]);
+    const getMediaOptionsItemsHandler = useCallback(() => {
 		const {
 			allowedTypes = [],
 			__experimentalOnlyMediaLibrary,
 			isAudioBlockMediaUploadEnabled,
-		} = this.props;
+		} = props;
 
-		return this.getAllSources()
+		return getAllSourcesHandler()
 			.filter( ( source ) => {
 				if ( __experimentalOnlyMediaLibrary ) {
 					return source.mediaLibrary;
@@ -176,40 +169,37 @@ export class MediaUpload extends Component {
 			.map( ( source ) => {
 				return {
 					...source,
-					icon: source.icon || this.getChooseFromDeviceIcon(),
+					icon: source.icon || getChooseFromDeviceIconHandler(),
 				};
 			} );
-	}
-
-	getChooseFromDeviceIcon() {
+	}, []);
+    const getChooseFromDeviceIconHandler = useCallback(() => {
 		return mobile;
-	}
-
-	onPickerPresent() {
-		const { autoOpen } = this.props;
+	}, []);
+    const onPickerPresentHandler = useCallback(() => {
+		const { autoOpen } = props;
 		const isIOS = Platform.OS === 'ios';
 
-		if ( this.picker ) {
+		if ( pickerHandler ) {
 			// the delay below is required because on iOS this action sheet gets dismissed by the close event of the Inserter
 			// so this delay allows the Inserter to be closed fully before presenting action sheet.
 			if ( autoOpen && isIOS ) {
-				this.pickerTimeout = setTimeout(
-					() => this.picker.presentPicker(),
+				pickerTimeout.current = setTimeout(
+					() => pickerHandler.presentPicker(),
 					PICKER_OPENING_DELAY
 				);
 			} else {
-				this.picker.presentPicker();
+				pickerHandler.presentPicker();
 			}
 		}
-	}
-
-	onPickerSelect( value ) {
+	}, []);
+    const onPickerSelectHandler = useCallback(( value ) => {
 		const {
 			allowedTypes = [],
 			onSelect,
 			onSelectURL,
 			multiple = false,
-		} = this.props;
+		} = props;
 
 		if ( value === URL_MEDIA_SOURCE ) {
 			prompt(
@@ -232,7 +222,7 @@ export class MediaUpload extends Component {
 			return;
 		}
 
-		const mediaSource = this.getAllSources()
+		const mediaSource = getAllSourcesHandler()
 			.filter( ( source ) => source.value === value )
 			.shift();
 		const types = allowedTypes.filter( ( type ) =>
@@ -244,10 +234,9 @@ export class MediaUpload extends Component {
 				onSelect( media );
 			}
 		} );
-	}
+	}, []);
 
-	render() {
-		const { allowedTypes = [], isReplacingMedia, multiple } = this.props;
+    const { allowedTypes = [], isReplacingMedia, multiple } = props;
 		const isOneType = allowedTypes.length === 1;
 		const isImage = isOneType && allowedTypes.includes( MEDIA_TYPE_IMAGE );
 		const isVideo = isOneType && allowedTypes.includes( MEDIA_TYPE_VIDEO );
@@ -299,19 +288,21 @@ export class MediaUpload extends Component {
 			<Picker
 				title={ pickerTitle }
 				hideCancelButton
-				ref={ ( instance ) => ( this.picker = instance ) }
-				options={ this.getMediaOptionsItems() }
-				onChange={ this.onPickerSelect }
+				ref={ ( instance ) => ( pickerHandler = instance ) }
+				options={ getMediaOptionsItemsHandler() }
+				onChange={ onPickerSelectHandler }
 				testID="media-options-picker"
 			/>
 		);
 
-		return this.props.render( {
-			open: this.onPickerPresent,
+		return props.render( {
+			open: onPickerPresentHandler,
 			getMediaOptions,
-		} );
-	}
-}
+		} ); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select ) => {

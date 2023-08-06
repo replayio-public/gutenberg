@@ -1,26 +1,27 @@
 /**
  * External dependencies
  */
+
 import {
-	View,
-	Text,
-	TouchableWithoutFeedback,
-	TouchableHighlight,
+    View,
+    Text,
+    TouchableWithoutFeedback,
+    TouchableHighlight,
 } from 'react-native';
 
 /**
  * WordPress dependencies
  */
 import {
-	requestUnsupportedBlockFallback,
-	sendActionButtonPressedAction,
-	actionButtons,
+    requestUnsupportedBlockFallback,
+    sendActionButtonPressedAction,
+    actionButtons,
 } from '@wordpress/react-native-bridge';
 import { BottomSheet, Icon, TextControl } from '@wordpress/components';
 import { compose, withPreferredColorScheme } from '@wordpress/compose';
 import { coreBlocks } from '@wordpress/block-library';
 import { normalizeIconObject } from '@wordpress/blocks';
-import { Component } from '@wordpress/element';
+import { useState, useCallback, useEffect } from '@wordpress/element';
 import { __, _x, sprintf } from '@wordpress/i18n';
 import { help, plugins } from '@wordpress/icons';
 import { withSelect, withDispatch } from '@wordpress/data';
@@ -36,36 +37,26 @@ import styles from './style.scss';
 const UBE_INCOMPATIBLE_BLOCKS = [ 'core/block' ];
 const I18N_BLOCK_SCHEMA_TITLE = 'block title';
 
-export class UnsupportedBlockEdit extends Component {
-	constructor( props ) {
-		super( props );
-		this.state = { showHelp: false };
-		this.toggleSheet = this.toggleSheet.bind( this );
-		this.closeSheet = this.closeSheet.bind( this );
-		this.requestFallback = this.requestFallback.bind( this );
-		this.onHelpButtonPressed = this.onHelpButtonPressed.bind( this );
-	}
+export export const UnsupportedBlockEdit = (props) => {
 
-	toggleSheet() {
-		this.setState( {
-			showHelp: ! this.state.showHelp,
-		} );
-	}
 
-	closeSheet() {
-		this.setState( {
-			showHelp: false,
-		} );
-	}
+    const [showHelp, setShowHelp] = useState(false);
 
-	componentWillUnmount() {
-		if ( this.timeout ) {
-			clearTimeout( this.timeout );
+    const toggleSheetHandler = useCallback(() => {
+		setShowHelp(! showHelp);
+	}, [showHelp]);
+    const closeSheetHandler = useCallback(() => {
+		setShowHelp(false);
+	}, []);
+    useEffect(() => {
+    return () => {
+		if ( timeoutHandler ) {
+			clearTimeout( timeoutHandler );
 		}
-	}
-
-	getTitle() {
-		const { originalName } = this.props.attributes;
+	};
+}, []);
+    const getTitleHandler = useCallback(() => {
+		const { originalName } = props.attributes;
 		const blockType = coreBlocks[ originalName ];
 		const title = blockType?.metadata.title;
 		const textdomain = blockType?.metadata.textdomain;
@@ -74,17 +65,16 @@ export class UnsupportedBlockEdit extends Component {
 			? // eslint-disable-next-line @wordpress/i18n-no-variables, @wordpress/i18n-text-domain
 			  _x( title, I18N_BLOCK_SCHEMA_TITLE, textdomain )
 			: originalName;
-	}
-
-	renderHelpIcon() {
-		const infoIconStyle = this.props.getStylesFromColorScheme(
+	}, []);
+    const renderHelpIconHandler = useCallback(() => {
+		const infoIconStyle = props.getStylesFromColorScheme(
 			styles.infoIcon,
 			styles.infoIconDark
 		);
 
 		return (
 			<TouchableHighlight
-				onPress={ this.onHelpButtonPressed }
+				onPress={ onHelpButtonPressedHandler }
 				style={ styles.helpIconContainer }
 				accessibilityLabel={ __( 'Help button' ) }
 				accessibilityRole={ 'button' }
@@ -98,29 +88,26 @@ export class UnsupportedBlockEdit extends Component {
 				/>
 			</TouchableHighlight>
 		);
-	}
-
-	onHelpButtonPressed() {
-		if ( ! this.props.isSelected ) {
-			this.props.selectBlock();
+	}, []);
+    const onHelpButtonPressedHandler = useCallback(() => {
+		if ( ! props.isSelected ) {
+			props.selectBlock();
 		}
-		this.toggleSheet();
-	}
-
-	requestFallback() {
+		toggleSheetHandler();
+	}, []);
+    const requestFallbackHandler = useCallback(() => {
 		if (
-			this.props.canEnableUnsupportedBlockEditor &&
-			this.props.isUnsupportedBlockEditorSupported === false
+			props.canEnableUnsupportedBlockEditor &&
+			props.isUnsupportedBlockEditorSupported === false
 		) {
-			this.toggleSheet();
-			this.setState( { sendButtonPressMessage: true } );
+			toggleSheetHandler();
+			setSendButtonPressMessage(true);
 		} else {
-			this.toggleSheet();
-			this.setState( { sendFallbackMessage: true } );
+			toggleSheetHandler();
+			setSendFallbackMessage(true);
 		}
-	}
-
-	renderSheet( blockTitle, blockName ) {
+	}, []);
+    const renderSheetHandler = useCallback(( blockTitle, blockName ) => {
 		const {
 			getStylesFromColorScheme,
 			attributes,
@@ -128,7 +115,7 @@ export class UnsupportedBlockEdit extends Component {
 			isUnsupportedBlockEditorSupported,
 			canEnableUnsupportedBlockEditor,
 			isEditableInUnsupportedBlockEditor,
-		} = this.props;
+		} = props;
 		const infoTextStyle = getStylesFromColorScheme(
 			styles.infoText,
 			styles.infoTextDark
@@ -165,14 +152,14 @@ export class UnsupportedBlockEdit extends Component {
 
 		return (
 			<BottomSheet
-				isVisible={ this.state.showHelp }
+				isVisible={ showHelp }
 				hideHeader
-				onClose={ this.closeSheet }
+				onClose={ closeSheetHandler }
 				onModalHide={ () => {
-					if ( this.state.sendFallbackMessage ) {
+					if ( sendFallbackMessage ) {
 						// On iOS, onModalHide is called when the controller is still part of the hierarchy.
 						// A small delay will ensure that the controller has already been removed.
-						this.timeout = setTimeout( () => {
+						timeoutHandler = setTimeout( () => {
 							// For the Classic block, the content is kept in the `content` attribute.
 							const content =
 								blockName === 'core/freeform'
@@ -185,14 +172,14 @@ export class UnsupportedBlockEdit extends Component {
 								blockTitle
 							);
 						}, 100 );
-						this.setState( { sendFallbackMessage: false } );
-					} else if ( this.state.sendButtonPressMessage ) {
-						this.timeout = setTimeout( () => {
+						setSendFallbackMessage(false);
+					} else if ( sendButtonPressMessage ) {
+						timeoutHandler = setTimeout( () => {
 							sendActionButtonPressedAction(
 								actionButtons.missingBlockAlertActionButton
 							);
 						}, 100 );
-						this.setState( { sendButtonPressMessage: false } );
+						setSendButtonPressMessage(false);
 					}
 				} }
 			>
@@ -218,27 +205,26 @@ export class UnsupportedBlockEdit extends Component {
 							<TextControl
 								label={ missingBlockActionButton }
 								separatorType="topFullWidth"
-								onPress={ this.requestFallback }
+								onPress={ requestFallbackHandler }
 								labelStyle={ actionButtonStyle }
 							/>
 							<TextControl
 								label={ __( 'Dismiss' ) }
 								separatorType="topFullWidth"
-								onPress={ this.toggleSheet }
+								onPress={ toggleSheetHandler }
 								labelStyle={ actionButtonStyle }
 							/>
 						</>
 					) }
 			</BottomSheet>
 		);
-	}
+	}, [showHelp]);
 
-	render() {
-		const { originalName } = this.props.attributes;
-		const { getStylesFromColorScheme, preferredColorScheme } = this.props;
+    const { originalName } = props.attributes;
+		const { getStylesFromColorScheme, preferredColorScheme } = props;
 		const blockType = coreBlocks[ originalName ];
 
-		const title = this.getTitle();
+		const title = getTitleHandler();
 		const titleStyle = getStylesFromColorScheme(
 			styles.unsupportedBlockMessage,
 			styles.unsupportedBlockMessageDark
@@ -262,11 +248,11 @@ export class UnsupportedBlockEdit extends Component {
 		const iconClassName = 'unsupported-icon' + '-' + preferredColorScheme;
 		return (
 			<TouchableWithoutFeedback
-				disabled={ ! this.props.isSelected }
+				disabled={ ! props.isSelected }
 				accessibilityLabel={ __( 'Help button' ) }
 				accessibilityRole={ 'button' }
 				accessibilityHint={ __( 'Tap here to show help' ) }
-				onPress={ this.toggleSheet }
+				onPress={ toggleSheetHandler }
 			>
 				<View
 					style={ getStylesFromColorScheme(
@@ -274,7 +260,7 @@ export class UnsupportedBlockEdit extends Component {
 						styles.unsupportedBlockDark
 					) }
 				>
-					{ this.renderHelpIcon() }
+					{ renderHelpIconHandler() }
 					<Icon
 						className={ iconClassName }
 						icon={ icon && icon.src ? icon.src : icon }
@@ -282,12 +268,14 @@ export class UnsupportedBlockEdit extends Component {
 					/>
 					<Text style={ titleStyle }>{ title }</Text>
 					{ subtitle }
-					{ this.renderSheet( title, originalName ) }
+					{ renderSheetHandler( title, originalName ) }
 				</View>
 			</TouchableWithoutFeedback>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select, { attributes } ) => {

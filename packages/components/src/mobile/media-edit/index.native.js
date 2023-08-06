@@ -1,12 +1,13 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+
+import { useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Picker } from '@wordpress/components';
 import {
-	requestMediaEditor,
-	mediaSources,
+    requestMediaEditor,
+    mediaSources,
 } from '@wordpress/react-native-bridge';
 
 export const MEDIA_TYPE_IMAGE = 'image';
@@ -28,28 +29,22 @@ const replaceOption = {
 	types: [ MEDIA_TYPE_IMAGE ],
 };
 
-export class MediaEdit extends Component {
-	constructor( props ) {
-		super( props );
-		this.onPickerPresent = this.onPickerPresent.bind( this );
-		this.onPickerSelect = this.onPickerSelect.bind( this );
-		this.getMediaOptionsItems = this.getMediaOptionsItems.bind( this );
-		this.getDestructiveButtonIndex =
-			this.getDestructiveButtonIndex.bind( this );
-	}
+export export const MediaEdit = (props) => {
 
-	getMediaOptionsItems() {
-		const { pickerOptions, openReplaceMediaOptions, source } = this.props;
+
+    
+
+    const getMediaOptionsItemsHandler = useCallback(() => {
+		const { pickerOptions, openReplaceMediaOptions, source } = props;
 
 		return [
 			source?.uri && editOption,
 			openReplaceMediaOptions && replaceOption,
 			...( pickerOptions ? pickerOptions : [] ),
 		].filter( Boolean );
-	}
-
-	getDestructiveButtonIndex() {
-		const options = this.getMediaOptionsItems();
+	}, []);
+    const getDestructiveButtonIndexHandler = useCallback(() => {
+		const options = getMediaOptionsItemsHandler();
 		const destructiveButtonIndex = options.findIndex(
 			( option ) => option?.destructiveButton
 		);
@@ -57,25 +52,23 @@ export class MediaEdit extends Component {
 		return destructiveButtonIndex !== -1
 			? destructiveButtonIndex + 1
 			: undefined;
-	}
-
-	onPickerPresent() {
-		if ( this.picker ) {
-			this.picker.presentPicker();
+	}, []);
+    const onPickerPresentHandler = useCallback(() => {
+		if ( pickerHandler ) {
+			pickerHandler.presentPicker();
 		}
-	}
-
-	onPickerSelect( value ) {
+	}, []);
+    const onPickerSelectHandler = useCallback(( value ) => {
 		const {
 			onSelect,
 			pickerOptions,
 			multiple = false,
 			openReplaceMediaOptions,
-		} = this.props;
+		} = props;
 
 		switch ( value ) {
 			case MEDIA_EDITOR:
-				requestMediaEditor( this.props.source.uri, ( media ) => {
+				requestMediaEditor( props.source.uri, ( media ) => {
 					if ( ( multiple && media ) || ( media && media.id ) ) {
 						onSelect( media );
 					}
@@ -95,27 +88,28 @@ export class MediaEdit extends Component {
 					openReplaceMediaOptions();
 				}
 		}
-	}
+	}, []);
 
-	render() {
-		const mediaOptions = () => (
+    const mediaOptions = () => (
 			<Picker
 				hideCancelButton
-				ref={ ( instance ) => ( this.picker = instance ) }
-				options={ this.getMediaOptionsItems() }
+				ref={ ( instance ) => ( pickerHandler = instance ) }
+				options={ getMediaOptionsItemsHandler() }
 				leftAlign={ true }
-				onChange={ this.onPickerSelect }
+				onChange={ onPickerSelectHandler }
 				// translators: %s: block title e.g: "Paragraph".
 				title={ __( 'Media options' ) }
-				destructiveButtonIndex={ this.getDestructiveButtonIndex() }
+				destructiveButtonIndex={ getDestructiveButtonIndexHandler() }
 			/>
 		);
 
-		return this.props.render( {
-			open: this.onPickerPresent,
+		return props.render( {
+			open: onPickerPresentHandler,
 			mediaOptions,
-		} );
-	}
-}
+		} ); 
+};
+
+
+
 
 export default MediaEdit;

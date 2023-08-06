@@ -1,25 +1,26 @@
 /**
  * External dependencies
  */
+
 import { View, Text, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import { pick } from 'lodash';
 
 /**
  * WordPress dependencies
  */
-import { Component, createRef, useMemo } from '@wordpress/element';
+import { useState, useCallback, useMemo } from '@wordpress/element';
 import {
-	GlobalStylesContext,
-	getMergedGlobalStyles,
-	useMobileGlobalStylesColors,
-	alignmentHelpers,
-	useGlobalStyles,
+    GlobalStylesContext,
+    getMergedGlobalStyles,
+    useMobileGlobalStylesColors,
+    alignmentHelpers,
+    useGlobalStyles,
 } from '@wordpress/components';
 import { withDispatch, withSelect } from '@wordpress/data';
 import { compose, withPreferredColorScheme } from '@wordpress/compose';
 import {
-	getBlockType,
-	__experimentalGetAccessibleBlockLabel as getAccessibleBlockLabel,
+    getBlockType,
+    __experimentalGetAccessibleBlockLabel as getAccessibleBlockLabel,
 } from '@wordpress/blocks';
 import { useSetting } from '@wordpress/block-editor';
 
@@ -27,11 +28,8 @@ import { useSetting } from '@wordpress/block-editor';
  * Internal dependencies
  */
 import styles from './block.scss';
-import BlockEdit from '../block-edit';
-import BlockInvalidWarning from './block-invalid-warning';
 import BlockMobileToolbar from '../block-mobile-toolbar';
 import { store as blockEditorStore } from '../../store';
-import BlockDraggable from '../block-draggable';
 
 const emptyArray = [];
 function BlockForType( {
@@ -104,40 +102,28 @@ function BlockForType( {
 	);
 }
 
-class BlockListBlock extends Component {
-	constructor() {
-		super( ...arguments );
+const BlockListBlock = (props) => {
 
-		this.insertBlocksAfter = this.insertBlocksAfter.bind( this );
-		this.onFocus = this.onFocus.bind( this );
-		this.getBlockWidth = this.getBlockWidth.bind( this );
 
-		this.state = {
-			blockWidth: this.props.blockWidth - 2 * this.props.marginHorizontal,
-		};
+    const [blockWidth, setBlockWidth] = useState(props.blockWidth - 2 * props.marginHorizontal);
 
-		this.anchorNodeRef = createRef();
-	}
-
-	onFocus() {
-		const { firstToSelectId, isSelected, onSelect } = this.props;
+    const onFocusHandler = useCallback(() => {
+		const { firstToSelectId, isSelected, onSelect } = props;
 		if ( ! isSelected ) {
 			onSelect( firstToSelectId );
 		}
-	}
-
-	insertBlocksAfter( blocks ) {
-		this.props.onInsertBlocks( blocks, this.props.order + 1 );
+	}, []);
+    const insertBlocksAfterHandler = useCallback(( blocks ) => {
+		props.onInsertBlocks( blocks, props.order + 1 );
 
 		if ( blocks[ 0 ] ) {
 			// Focus on the first block inserted.
-			this.props.onSelect( blocks[ 0 ].clientId );
+			props.onSelect( blocks[ 0 ].clientId );
 		}
-	}
-
-	getBlockWidth( { nativeEvent } ) {
+	}, []);
+    const getBlockWidthHandler = useCallback(( { nativeEvent } ) => {
 		const { layout } = nativeEvent;
-		const { blockWidth } = this.state;
+		
 		const layoutWidth = Math.floor( layout.width );
 
 		if ( ! blockWidth || ! layoutWidth ) {
@@ -145,33 +131,30 @@ class BlockListBlock extends Component {
 		}
 
 		if ( blockWidth !== layoutWidth ) {
-			this.setState( { blockWidth: layoutWidth } );
+			setBlockWidth(layoutWidth);
 		}
-	}
-
-	getBlockForType() {
-		const { blockWidth } = this.state;
+	}, [blockWidth]);
+    const getBlockForTypeHandler = useCallback(() => {
+		
 		return (
 			<BlockForType
-				{ ...this.props }
-				onBlockFocus={ this.onFocus }
-				insertBlocksAfter={ this.insertBlocksAfter }
-				getBlockWidth={ this.getBlockWidth }
+				{ ...props }
+				onBlockFocus={ onFocusHandler }
+				insertBlocksAfter={ insertBlocksAfterHandler }
+				getBlockWidth={ getBlockWidthHandler }
 				blockWidth={ blockWidth }
 			/>
 		);
-	}
-
-	renderBlockTitle() {
+	}, [blockWidth]);
+    const renderBlockTitleHandler = useCallback(() => {
 		return (
 			<View style={ styles.blockTitle }>
-				<Text>BlockType: { this.props.name }</Text>
+				<Text>BlockType: { props.name }</Text>
 			</View>
 		);
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			attributes,
 			blockType,
 			clientId,
@@ -192,12 +175,12 @@ class BlockListBlock extends Component {
 			name,
 			draggingEnabled,
 			draggingClientId,
-		} = this.props;
+		} = props;
 
 		if ( ! attributes || ! blockType ) {
 			return null;
 		}
-		const { blockWidth } = this.state;
+		
 		const { align } = attributes;
 		const accessibilityLabel = getAccessibleBlockLabel(
 			blockType,
@@ -213,7 +196,7 @@ class BlockListBlock extends Component {
 
 		return (
 			<TouchableWithoutFeedback
-				onPress={ this.onFocus }
+				onPress={ onFocusHandler }
 				accessible={ accessible }
 				accessibilityRole={ 'button' }
 			>
@@ -267,7 +250,7 @@ class BlockListBlock extends Component {
 						>
 							{ () =>
 								isValid ? (
-									this.getBlockForType()
+									getBlockForTypeHandler()
 								) : (
 									<BlockInvalidWarning
 										blockTitle={ title }
@@ -279,7 +262,7 @@ class BlockListBlock extends Component {
 						</BlockDraggable>
 						<View
 							style={ styles.neutralToolbar }
-							ref={ this.anchorNodeRef }
+							ref={ anchorNodeRefHandler }
 						>
 							{ isSelected && (
 								<BlockMobileToolbar
@@ -289,7 +272,7 @@ class BlockListBlock extends Component {
 										isStackedHorizontally
 									}
 									blockWidth={ blockWidth }
-									anchorNodeRef={ this.anchorNodeRef.current }
+									anchorNodeRef={ anchorNodeRefHandler.current }
 									isFullWidth={ isFullWidthToolbar }
 									draggingClientId={ draggingClientId }
 								/>
@@ -298,9 +281,11 @@ class BlockListBlock extends Component {
 					</View>
 				</View>
 			</TouchableWithoutFeedback>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 // Helper function to memoize the wrapperProps since getEditWrapperProps always returns a new reference.
 const wrapperPropsCache = new WeakMap();

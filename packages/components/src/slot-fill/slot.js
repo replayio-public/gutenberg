@@ -2,11 +2,12 @@
 /**
  * WordPress dependencies
  */
+
 import {
-	Children,
-	Component,
-	cloneElement,
-	isEmptyElement,
+    Children,
+    useEffect, useCallback,
+    cloneElement,
+    isEmptyElement,
 } from '@wordpress/element';
 
 /**
@@ -24,48 +25,42 @@ function isFunction( maybeFunc ) {
 	return typeof maybeFunc === 'function';
 }
 
-class SlotComponent extends Component {
-	constructor() {
-		super( ...arguments );
+const SlotComponent = (props) => {
 
-		this.isUnmounted = false;
-		this.bindNode = this.bindNode.bind( this );
-	}
 
-	componentDidMount() {
-		const { registerSlot } = this.props;
+    
 
-		registerSlot( this.props.name, this );
-	}
+    useEffect(() => {
+		const { registerSlot } = props;
 
-	componentWillUnmount() {
-		const { unregisterSlot } = this.props;
-		this.isUnmounted = true;
-		unregisterSlot( this.props.name, this );
-	}
-
-	componentDidUpdate( prevProps ) {
-		const { name, unregisterSlot, registerSlot } = this.props;
+		registerSlot( props.name, this );
+	}, []);
+    useEffect(() => {
+    return () => {
+		const { unregisterSlot } = props;
+		isUnmountedHandler = true;
+		unregisterSlot( props.name, this );
+	};
+}, []);
+    useEffect(() => {
+		const { name, unregisterSlot, registerSlot } = props;
 
 		if ( prevProps.name !== name ) {
 			unregisterSlot( prevProps.name );
 			registerSlot( name, this );
 		}
-	}
-
-	bindNode( node ) {
-		this.node = node;
-	}
-
-	forceUpdate() {
-		if ( this.isUnmounted ) {
+	}, []);
+    const bindNodeHandler = useCallback(( node ) => {
+		nodeHandler = node;
+	}, []);
+    const forceUpdateHandler = useCallback(() => {
+		if ( isUnmountedHandler ) {
 			return;
 		}
 		super.forceUpdate();
-	}
+	}, []);
 
-	render() {
-		const { children, name, fillProps = {}, getFills } = this.props;
+    const { children, name, fillProps = {}, getFills } = props;
 
 		const fills = ( getFills( name, this ) ?? [] )
 			.map( ( fill ) => {
@@ -89,9 +84,11 @@ class SlotComponent extends Component {
 				( element ) => ! isEmptyElement( element )
 			);
 
-		return <>{ isFunction( children ) ? children( fills ) : fills }</>;
-	}
-}
+		return <>{ isFunction( children ) ? children( fills ) : fills }</>; 
+};
+
+
+
 
 const Slot = ( props ) => (
 	<SlotFillContext.Consumer>

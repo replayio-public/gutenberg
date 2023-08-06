@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+
 import { Platform, AccessibilityInfo, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 
@@ -8,7 +9,7 @@ import Slider from '@react-native-community/slider';
  * WordPress dependencies
  */
 import { __, sprintf } from '@wordpress/i18n';
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { withPreferredColorScheme } from '@wordpress/compose';
 
 /**
@@ -21,118 +22,96 @@ import { toFixed } from '../utils';
 
 const isIOS = Platform.OS === 'ios';
 
-class BottomSheetRangeCell extends Component {
-	constructor( props ) {
-		super( props );
-		this.onSliderChange = this.onSliderChange.bind( this );
-		this.onCompleteSliderChange = this.onCompleteSliderChange.bind( this );
-		this.onTextInputChange = this.onTextInputChange.bind( this );
-		this.a11yIncrementValue = this.a11yIncrementValue.bind( this );
-		this.a11yDecrementValue = this.a11yDecrementValue.bind( this );
-		this.a11yUpdateValue = this.a11yUpdateValue.bind( this );
+const BottomSheetRangeCell = (props) => {
+const { value, defaultValue, minimumValue } = props;
+    const initialValue = Number( value || defaultValue || minimumValue );
 
-		const { value, defaultValue, minimumValue } = props;
-		const initialValue = Number( value || defaultValue || minimumValue );
+    const [inputValue, setInputValue] = useState(initialValue);
+    const [sliderValue, setSliderValue] = useState(initialValue);
 
-		this.state = {
-			inputValue: initialValue,
-			sliderValue: initialValue,
-		};
-	}
-
-	componentWillUnmount() {
-		clearTimeout( this.timeoutAnnounceValue );
-	}
-
-	onSliderChange( initialValue ) {
-		const { decimalNum, onChange } = this.props;
+    useEffect(() => {
+    return () => {
+		clearTimeout( timeoutAnnounceValueHandler );
+	};
+}, []);
+    const onSliderChangeHandler = useCallback(( initialValue ) => {
+		const { decimalNum, onChange } = props;
 		initialValue = toFixed( initialValue, decimalNum );
-		this.setState( { inputValue: initialValue } );
+		setInputValue(initialValue);
 		onChange( initialValue );
-	}
-
-	onTextInputChange( nextValue ) {
-		const { onChange, onComplete } = this.props;
-		this.setState( {
-			sliderValue: nextValue,
-		} );
+	}, []);
+    const onTextInputChangeHandler = useCallback(( nextValue ) => {
+		const { onChange, onComplete } = props;
+		setSliderValue(nextValue);
 		onChange( nextValue );
 		if ( onComplete ) {
 			onComplete( nextValue );
 		}
-	}
-
-	onCompleteSliderChange( nextValue ) {
-		const { decimalNum, onComplete } = this.props;
+	}, []);
+    const onCompleteSliderChangeHandler = useCallback(( nextValue ) => {
+		const { decimalNum, onComplete } = props;
 		nextValue = toFixed( nextValue, decimalNum );
 		if ( onComplete ) {
 			onComplete( nextValue );
 		}
-	}
-
-	/*
+	}, []);
+    /*
 	 * Only used with screenreaders like VoiceOver and TalkBack. Increments the
 	 * value of this setting programmatically.
 	 */
-	a11yIncrementValue() {
-		const { step = 5, maximumValue, decimalNum } = this.props;
-		const { inputValue } = this.state;
+    const a11yIncrementValueHandler = useCallback(() => {
+		const { step = 5, maximumValue, decimalNum } = props;
+		
 
 		const newValue = toFixed( inputValue + step, decimalNum );
 
 		if ( newValue <= maximumValue || maximumValue === undefined ) {
-			this.a11yUpdateValue( newValue );
+			a11yUpdateValueHandler( newValue );
 		}
-	}
-
-	/*
+	}, [inputValue]);
+    /*
 	 * Only used with screenreaders like VoiceOver and TalkBack. Decrements the
 	 * value of this setting programmatically.
 	 */
-	a11yDecrementValue() {
-		const { step = 5, minimumValue, decimalNum } = this.props;
-		const { sliderValue } = this.state;
+    const a11yDecrementValueHandler = useCallback(() => {
+		const { step = 5, minimumValue, decimalNum } = props;
+		
 
 		const newValue = toFixed( sliderValue - step, decimalNum );
 
 		if ( newValue >= minimumValue ) {
-			this.a11yUpdateValue( newValue );
+			a11yUpdateValueHandler( newValue );
 		}
-	}
-
-	a11yUpdateValue( newValue ) {
-		const { onChange, onComplete } = this.props;
-		this.setState( {
-			sliderValue: newValue,
-			inputValue: newValue,
-		} );
+	}, [sliderValue]);
+    const a11yUpdateValueHandler = useCallback(( newValue ) => {
+		const { onChange, onComplete } = props;
+		setSliderValue(newValue);
+    setInputValue(newValue);
 		onChange( newValue );
 		if ( onComplete ) {
 			onComplete( newValue );
 		}
-		this.announceValue( newValue );
-	}
-
-	/*
+		announceValueHandler( newValue );
+	}, []);
+    /*
 	 * Only used with screenreaders like VoiceOver and TalkBack.
 	 */
-	announceValue( value ) {
-		const { label, unitLabel = '' } = this.props;
+    const announceValueHandler = useCallback(( value ) => {
+		const { label, unitLabel = '' } = props;
 
 		if ( isIOS ) {
 			// On Android it triggers the accessibilityLabel with the value change, but
 			// on iOS we need to do this manually.
-			clearTimeout( this.timeoutAnnounceValue );
-			this.timeoutAnnounceValue = setTimeout( () => {
+			clearTimeout( timeoutAnnounceValueHandler );
+			timeoutAnnounceValueHandler = setTimeout( () => {
 				AccessibilityInfo.announceForAccessibility(
 					`${ value } ${ unitLabel },  ${ label }`
 				);
 			}, 300 );
 		}
-	}
+	}, []);
 
-	render() {
-		const {
+    const {
 			value,
 			defaultValue,
 			minimumValue = 0,
@@ -154,9 +133,9 @@ class BottomSheetRangeCell extends Component {
 			children,
 			decimalNum,
 			...cellProps
-		} = this.props;
+		} = props;
 
-		const { inputValue, sliderValue } = this.state;
+		
 
 		const getAccessibilityHint = () => {
 			return openUnitPicker ? __( 'double-tap to change unit' ) : '';
@@ -190,10 +169,10 @@ class BottomSheetRangeCell extends Component {
 				onAccessibilityAction={ ( event ) => {
 					switch ( event.nativeEvent.actionName ) {
 						case 'increment':
-							this.a11yIncrementValue();
+							a11yIncrementValueHandler();
 							break;
 						case 'decrement':
-							this.a11yDecrementValue();
+							a11yDecrementValueHandler();
 							break;
 						case 'activate':
 							if ( openUnitPicker ) {
@@ -232,12 +211,12 @@ class BottomSheetRangeCell extends Component {
 								minimumTrackTintColor={ minimumTrackTintColor }
 								maximumTrackTintColor={ maximumTrackTintColor }
 								thumbTintColor={ thumbTintColor }
-								onValueChange={ this.onSliderChange }
+								onValueChange={ onSliderChangeHandler }
 								onSlidingComplete={
-									this.onCompleteSliderChange
+									onCompleteSliderChangeHandler
 								}
 								ref={ ( slider ) => {
-									this.sliderRef = slider;
+									sliderRefHandler = slider;
 								} }
 								style={
 									isIOS
@@ -248,7 +227,7 @@ class BottomSheetRangeCell extends Component {
 							{ shouldDisplayTextInput && (
 								<RangeTextInput
 									label={ cellProps.label }
-									onChange={ this.onTextInputChange }
+									onChange={ onTextInputChangeHandler }
 									defaultValue={ `${ inputValue }` }
 									value={ inputValue }
 									min={ minimumValue }
@@ -263,8 +242,10 @@ class BottomSheetRangeCell extends Component {
 					</Cell>
 				</View>
 			</View>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 export default withPreferredColorScheme( BottomSheetRangeCell );

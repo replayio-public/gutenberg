@@ -1,12 +1,13 @@
 /**
  * External dependencies
  */
-import { TextInput, Platform, Dimensions } from 'react-native';
+
+import { TextInput, Dimensions } from 'react-native';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useEffect, useCallback } from '@wordpress/element';
 import { RichText, getPxFromCssUnit } from '@wordpress/block-editor';
 
 /**
@@ -14,16 +15,12 @@ import { RichText, getPxFromCssUnit } from '@wordpress/block-editor';
  */
 import styles from './style.scss';
 
-export default class PlainText extends Component {
-	constructor() {
-		super( ...arguments );
-		this.isAndroid = Platform.OS === 'android';
+export default export const PlainText = (props) => {
 
-		this.onChangeTextInput = this.onChangeTextInput.bind( this );
-		this.onChangeRichText = this.onChangeRichText.bind( this );
-	}
 
-	componentDidMount() {
+    
+
+    useEffect(() => {
 		// If isSelected is true, we should request the focus on this TextInput.
 		if (
 			this._input &&
@@ -43,29 +40,26 @@ export default class PlainText extends Component {
 				this._input.focus();
 			}
 		}
-	}
-
-	componentDidUpdate( prevProps ) {
+	}, []);
+    useEffect(() => {
 		if ( ! this.props.isSelected && prevProps.isSelected ) {
 			this._input?.blur();
 		}
-	}
-
-	componentWillUnmount() {
+	}, []);
+    useEffect(() => {
+    return () => {
 		if ( this.isAndroid ) {
 			clearTimeout( this.timeoutID );
 		}
-	}
-
-	focus() {
+	};
+}, []);
+    const focusHandler = useCallback(() => {
 		this._input?.focus();
-	}
-
-	blur() {
+	}, []);
+    const blurHandler = useCallback(() => {
 		this._input?.blur();
-	}
-
-	getFontSize() {
+	}, []);
+    const getFontSize = useMemo(() => {
 		const { style } = this.props;
 
 		if ( ! style?.fontSize ) {
@@ -80,26 +74,22 @@ export default class PlainText extends Component {
 				getPxFromCssUnit( style.fontSize, cssUnitOptions )
 			),
 		};
-	}
-
-	replaceLineBreakTags( value ) {
+	}, []);
+    const replaceLineBreakTagsHandler = useCallback(( value ) => {
 		return value?.replace( RegExp( '<br>', 'gim' ), '\n' );
-	}
-
-	onChangeTextInput( event ) {
+	}, []);
+    const onChangeTextInputHandler = useCallback(( event ) => {
 		const { onChange } = this.props;
 		onChange( event.nativeEvent.text );
-	}
-
-	onChangeRichText( value ) {
+	}, []);
+    const onChangeRichTextHandler = useCallback(( value ) => {
 		const { onChange } = this.props;
 		// The <br> tags have to be replaced with new line characters
 		// as the content of plain text shouldn't contain HTML tags.
 		onChange( this.replaceLineBreakTags( value ) );
-	}
+	}, []);
 
-	render() {
-		const { style, __experimentalVersion, onFocus, ...otherProps } =
+    const { style, __experimentalVersion, onFocus, ...otherProps } =
 			this.props;
 		const textStyles = [
 			style || styles[ 'block-editor-plain-text' ],
@@ -154,6 +144,8 @@ export default class PlainText extends Component {
 				style={ textStyles }
 				scrollEnabled={ false }
 			/>
-		);
-	}
-}
+		); 
+};
+
+
+

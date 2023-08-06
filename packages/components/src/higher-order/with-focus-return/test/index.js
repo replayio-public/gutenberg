@@ -1,28 +1,35 @@
 /**
  * External dependencies
  */
+
 import renderer from 'react-test-renderer';
 import { render, fireEvent } from '@testing-library/react';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
 
 /**
  * Internal dependencies
  */
 import withFocusReturn from '../';
 
-class Test extends Component {
-	render() {
-		return (
+const Test = () => {
+
+
+    
+
+    
+
+    return (
 			<div className="test">
 				<textarea />
 			</div>
-		);
-	}
-}
+		); 
+};
+
+
+
 
 describe( 'withFocusReturn()', () => {
 	describe( 'testing rendering and focus handling', () => {

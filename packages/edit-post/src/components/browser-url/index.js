@@ -1,7 +1,8 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { withSelect } from '@wordpress/data';
 import { addQueryArgs } from '@wordpress/url';
 import { store as editorStore } from '@wordpress/editor';
@@ -33,23 +34,20 @@ export function getPostTrashedURL( postId, postType ) {
 	} );
 }
 
-export class BrowserURL extends Component {
-	constructor() {
-		super( ...arguments );
+export export const BrowserURL = (props) => {
 
-		this.state = {
-			historyId: null,
-		};
-	}
 
-	componentDidUpdate( prevProps ) {
-		const { postId, postStatus, postType, isSavingPost } = this.props;
-		const { historyId } = this.state;
+    const [historyId, setHistoryId] = useState(null);
+    const [historyId, setHistoryId] = useState();
+
+    useEffect(() => {
+		const { postId, postStatus, postType, isSavingPost } = props;
+		
 
 		// Posts are still dirty while saving so wait for saving to finish
 		// to avoid the unsaved changes warning when trashing posts.
 		if ( postStatus === 'trash' && ! isSavingPost ) {
-			this.setTrashURL( postId, postType );
+			setTrashURLHandler( postId, postType );
 			return;
 		}
 
@@ -58,21 +56,19 @@ export class BrowserURL extends Component {
 			postStatus !== 'auto-draft' &&
 			postId
 		) {
-			this.setBrowserURL( postId );
+			setBrowserURLHandler( postId );
 		}
-	}
-
-	/**
+	}, [historyId]);
+    /**
 	 * Navigates the browser to the post trashed URL to show a notice about the trashed post.
 	 *
 	 * @param {number} postId   Post ID.
 	 * @param {string} postType Post Type.
 	 */
-	setTrashURL( postId, postType ) {
+    const setTrashURLHandler = useCallback(( postId, postType ) => {
 		window.location.href = getPostTrashedURL( postId, postType );
-	}
-
-	/**
+	}, []);
+    /**
 	 * Replaces the browser URL with a post editor link for the given post ID.
 	 *
 	 * Note it is important that, since this function may be called when the
@@ -81,22 +77,21 @@ export class BrowserURL extends Component {
 	 *
 	 * @param {number} postId Post ID for which to generate post editor URL.
 	 */
-	setBrowserURL( postId ) {
+    const setBrowserURLHandler = useCallback(( postId ) => {
 		window.history.replaceState(
 			{ id: postId },
 			'Post ' + postId,
 			getPostEditURL( postId )
 		);
 
-		this.setState( () => ( {
-			historyId: postId,
-		} ) );
-	}
+		setHistoryId(postId);
+	}, []);
 
-	render() {
-		return null;
-	}
-}
+    return null; 
+};
+
+
+
 
 export default withSelect( ( select ) => {
 	const { getCurrentPost, isSavingPost } = select( editorStore );

@@ -1,36 +1,37 @@
 /**
  * External dependencies
  */
+
 import { View, TouchableWithoutFeedback, Text } from 'react-native';
 import { isEmpty } from 'lodash';
 
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import {
-	mediaUploadSync,
-	requestImageFailedRetryDialog,
-	requestImageUploadCancelDialog,
+    mediaUploadSync,
+    requestImageFailedRetryDialog,
+    requestImageUploadCancelDialog,
 } from '@wordpress/react-native-bridge';
 import {
-	Icon,
-	ToolbarButton,
-	ToolbarGroup,
-	PanelBody,
+    Icon,
+    ToolbarButton,
+    ToolbarGroup,
+    PanelBody,
 } from '@wordpress/components';
 import { withPreferredColorScheme, compose } from '@wordpress/compose';
 import {
-	BlockCaption,
-	MediaPlaceholder,
-	MediaUpload,
-	MediaUploadProgress,
-	MEDIA_TYPE_VIDEO,
-	BlockControls,
-	VIDEO_ASPECT_RATIO,
-	VideoPlayer,
-	InspectorControls,
-	store as blockEditorStore,
+    BlockCaption,
+    MediaPlaceholder,
+    MediaUpload,
+    MediaUploadProgress,
+    MEDIA_TYPE_VIDEO,
+    BlockControls,
+    VIDEO_ASPECT_RATIO,
+    VideoPlayer,
+    InspectorControls,
+    store as blockEditorStore,
 } from '@wordpress/block-editor';
 import { __, sprintf } from '@wordpress/i18n';
 import { isURL, getProtocol } from '@wordpress/url';
@@ -45,7 +46,6 @@ import { store as noticesStore } from '@wordpress/notices';
 import { createUpgradedEmbedBlock } from '../embed/util';
 import style from './style.scss';
 import SvgIconRetry from './icon-retry';
-import VideoCommonSettings from './edit-common-settings';
 
 const ICON_TYPE = {
 	PLACEHOLDER: 'placeholder',
@@ -53,61 +53,36 @@ const ICON_TYPE = {
 	UPLOAD: 'upload',
 };
 
-class VideoEdit extends Component {
-	constructor( props ) {
-		super( props );
+const VideoEdit = (props) => {
 
-		this.state = {
-			isCaptionSelected: false,
-			videoContainerHeight: 0,
-		};
 
-		this.mediaUploadStateReset = this.mediaUploadStateReset.bind( this );
-		this.onSelectMediaUploadOption =
-			this.onSelectMediaUploadOption.bind( this );
-		this.onSelectURL = this.onSelectURL.bind( this );
-		this.finishMediaUploadWithSuccess =
-			this.finishMediaUploadWithSuccess.bind( this );
-		this.finishMediaUploadWithFailure =
-			this.finishMediaUploadWithFailure.bind( this );
-		this.updateMediaProgress = this.updateMediaProgress.bind( this );
-		this.onVideoPressed = this.onVideoPressed.bind( this );
-		this.onVideoContanerLayout = this.onVideoContanerLayout.bind( this );
-		this.onFocusCaption = this.onFocusCaption.bind( this );
-	}
+    const [isCaptionSelected, setIsCaptionSelected] = useState(false);
+    const [videoContainerHeight, setVideoContainerHeight] = useState(0);
 
-	componentDidMount() {
-		const { attributes } = this.props;
+    useEffect(() => {
+		const { attributes } = props;
 		if ( attributes.id && getProtocol( attributes.src ) === 'file:' ) {
 			mediaUploadSync();
 		}
-	}
-
-	componentWillUnmount() {
+	}, []);
+    useEffect(() => {
+    return () => {
 		// This action will only exist if the user pressed the trash button on the block holder.
 		if (
 			hasAction( 'blocks.onRemoveBlockCheckUpload' ) &&
-			this.state.isUploadInProgress
+			isUploadInProgress
 		) {
 			doAction(
 				'blocks.onRemoveBlockCheckUpload',
-				this.props.attributes.id
+				props.attributes.id
 			);
 		}
-	}
+	};
+}, []);
+    const onVideoPressedHandler = useCallback(() => {
+		const { attributes } = props;
 
-	static getDerivedStateFromProps( props, state ) {
-		// Avoid a UI flicker in the toolbar by insuring that isCaptionSelected
-		// is updated immediately any time the isSelected prop becomes false.
-		return {
-			isCaptionSelected: props.isSelected && state.isCaptionSelected,
-		};
-	}
-
-	onVideoPressed() {
-		const { attributes } = this.props;
-
-		if ( this.state.isUploadInProgress ) {
+		if ( isUploadInProgress ) {
 			requestImageUploadCancelDialog( attributes.id );
 		} else if (
 			attributes.id &&
@@ -116,52 +91,43 @@ class VideoEdit extends Component {
 			requestImageFailedRetryDialog( attributes.id );
 		}
 
-		this.setState( {
-			isCaptionSelected: false,
-		} );
-	}
-
-	onFocusCaption() {
-		if ( ! this.state.isCaptionSelected ) {
-			this.setState( { isCaptionSelected: true } );
+		setIsCaptionSelected(false);
+	}, []);
+    const onFocusCaptionHandler = useCallback(() => {
+		if ( ! isCaptionSelected ) {
+			setIsCaptionSelected(true);
 		}
-	}
-
-	updateMediaProgress( payload ) {
-		const { setAttributes } = this.props;
+	}, [isCaptionSelected]);
+    const updateMediaProgressHandler = useCallback(( payload ) => {
+		const { setAttributes } = props;
 		if ( payload.mediaUrl ) {
 			setAttributes( { url: payload.mediaUrl } );
 		}
-		if ( ! this.state.isUploadInProgress ) {
-			this.setState( { isUploadInProgress: true } );
+		if ( ! isUploadInProgress ) {
+			setIsUploadInProgress(true);
 		}
-	}
-
-	finishMediaUploadWithSuccess( payload ) {
-		const { setAttributes } = this.props;
+	}, []);
+    const finishMediaUploadWithSuccessHandler = useCallback(( payload ) => {
+		const { setAttributes } = props;
 		setAttributes( { src: payload.mediaUrl, id: payload.mediaServerId } );
-		this.setState( { isUploadInProgress: false } );
-	}
-
-	finishMediaUploadWithFailure( payload ) {
-		const { setAttributes } = this.props;
+		setIsUploadInProgress(false);
+	}, []);
+    const finishMediaUploadWithFailureHandler = useCallback(( payload ) => {
+		const { setAttributes } = props;
 		setAttributes( { id: payload.mediaId } );
-		this.setState( { isUploadInProgress: false } );
-	}
-
-	mediaUploadStateReset() {
-		const { setAttributes } = this.props;
+		setIsUploadInProgress(false);
+	}, []);
+    const mediaUploadStateResetHandler = useCallback(() => {
+		const { setAttributes } = props;
 		setAttributes( { id: null, src: null } );
-		this.setState( { isUploadInProgress: false } );
-	}
-
-	onSelectMediaUploadOption( { id, url } ) {
-		const { setAttributes } = this.props;
+		setIsUploadInProgress(false);
+	}, []);
+    const onSelectMediaUploadOptionHandler = useCallback(( { id, url } ) => {
+		const { setAttributes } = props;
 		setAttributes( { id, src: url } );
-	}
-
-	onSelectURL( url ) {
-		const { createErrorNotice, onReplace, setAttributes } = this.props;
+	}, []);
+    const onSelectURLHandler = useCallback(( url ) => {
+		const { createErrorNotice, onReplace, setAttributes } = props;
 
 		if ( isURL( url ) ) {
 			// Check if there's an embed block that handles this URL.
@@ -177,29 +143,27 @@ class VideoEdit extends Component {
 		} else {
 			createErrorNotice( __( 'Invalid URL.' ) );
 		}
-	}
-
-	onVideoContanerLayout( event ) {
+	}, []);
+    const onVideoContanerLayoutHandler = useCallback(( event ) => {
 		const { width } = event.nativeEvent.layout;
 		const height = width / VIDEO_ASPECT_RATIO;
-		if ( height !== this.state.videoContainerHeight ) {
-			this.setState( { videoContainerHeight: height } );
+		if ( height !== videoContainerHeight ) {
+			setVideoContainerHeight(height);
 		}
-	}
-
-	getIcon( iconType ) {
+	}, [videoContainerHeight]);
+    const getIconHandler = useCallback(( iconType ) => {
 		let iconStyle;
 		switch ( iconType ) {
 			case ICON_TYPE.RETRY:
 				return <Icon icon={ SvgIconRetry } { ...style.icon } />;
 			case ICON_TYPE.PLACEHOLDER:
-				iconStyle = this.props.getStylesFromColorScheme(
+				iconStyle = props.getStylesFromColorScheme(
 					style.icon,
 					style.iconDark
 				);
 				break;
 			case ICON_TYPE.UPLOAD:
-				iconStyle = this.props.getStylesFromColorScheme(
+				iconStyle = props.getStylesFromColorScheme(
 					style.iconUploading,
 					style.iconUploadingDark
 				);
@@ -207,20 +171,19 @@ class VideoEdit extends Component {
 		}
 
 		return <Icon icon={ SvgIcon } { ...iconStyle } />;
-	}
+	}, []);
 
-	render() {
-		const { setAttributes, attributes, isSelected, wasBlockJustInserted } =
-			this.props;
+    const { setAttributes, attributes, isSelected, wasBlockJustInserted } =
+			props;
 		const { id, src } = attributes;
-		const { videoContainerHeight } = this.state;
+		
 
 		const toolbarEditButton = (
 			<MediaUpload
 				allowedTypes={ [ MEDIA_TYPE_VIDEO ] }
 				isReplacingMedia={ true }
-				onSelect={ this.onSelectMediaUploadOption }
-				onSelectURL={ this.onSelectURL }
+				onSelect={ onSelectMediaUploadOptionHandler }
+				onSelectURL={ onSelectURLHandler }
 				render={ ( { open, getMediaOptions } ) => {
 					return (
 						<ToolbarGroup>
@@ -241,10 +204,10 @@ class VideoEdit extends Component {
 				<View style={ { flex: 1 } }>
 					<MediaPlaceholder
 						allowedTypes={ [ MEDIA_TYPE_VIDEO ] }
-						onSelect={ this.onSelectMediaUploadOption }
-						onSelectURL={ this.onSelectURL }
-						icon={ this.getIcon( ICON_TYPE.PLACEHOLDER ) }
-						onFocus={ this.props.onFocus }
+						onSelect={ onSelectMediaUploadOptionHandler }
+						onSelectURL={ onSelectURLHandler }
+						icon={ getIconHandler( ICON_TYPE.PLACEHOLDER ) }
+						onFocus={ props.onFocus }
 						autoOpenMediaUpload={
 							isSelected && wasBlockJustInserted
 						}
@@ -256,11 +219,11 @@ class VideoEdit extends Component {
 		return (
 			<TouchableWithoutFeedback
 				accessible={ ! isSelected }
-				onPress={ this.onVideoPressed }
+				onPress={ onVideoPressedHandler }
 				disabled={ ! isSelected }
 			>
 				<View style={ { flex: 1 } }>
-					{ ! this.state.isCaptionSelected && (
+					{ ! isCaptionSelected && (
 						<BlockControls>{ toolbarEditButton }</BlockControls>
 					) }
 					{ isSelected && (
@@ -276,13 +239,13 @@ class VideoEdit extends Component {
 					<MediaUploadProgress
 						mediaId={ id }
 						onFinishMediaUploadWithSuccess={
-							this.finishMediaUploadWithSuccess
+							finishMediaUploadWithSuccessHandler
 						}
 						onFinishMediaUploadWithFailure={
-							this.finishMediaUploadWithFailure
+							finishMediaUploadWithFailureHandler
 						}
-						onUpdateMediaProgress={ this.updateMediaProgress }
-						onMediaUploadStateReset={ this.mediaUploadStateReset }
+						onUpdateMediaProgress={ updateMediaProgressHandler }
+						onMediaUploadStateReset={ mediaUploadStateResetHandler }
 						renderContent={ ( {
 							isUploadInProgress,
 							isUploadFailed,
@@ -292,7 +255,7 @@ class VideoEdit extends Component {
 								isURL( src ) &&
 								! isUploadInProgress &&
 								! isUploadFailed;
-							const icon = this.getIcon(
+							const icon = getIconHandler(
 								isUploadFailed
 									? ICON_TYPE.RETRY
 									: ICON_TYPE.UPLOAD
@@ -319,7 +282,7 @@ class VideoEdit extends Component {
 
 							return (
 								<View
-									onLayout={ this.onVideoContanerLayout }
+									onLayout={ onVideoContanerLayoutHandler }
 									style={ containerStyle }
 								>
 									{ showVideo && (
@@ -327,8 +290,7 @@ class VideoEdit extends Component {
 											<VideoPlayer
 												isSelected={
 													isSelected &&
-													! this.state
-														.isCaptionSelected
+													! isCaptionSelected
 												}
 												style={ videoStyle }
 												source={ { uri: src } }
@@ -341,7 +303,7 @@ class VideoEdit extends Component {
 											style={ {
 												height: videoContainerHeight,
 												width: '100%',
-												...this.props.getStylesFromColorScheme(
+												...props.getStylesFromColorScheme(
 													style.placeholderContainer,
 													style.placeholderContainerDark
 												),
@@ -376,17 +338,25 @@ class VideoEdit extends Component {
 										caption
 								  )
 						}
-						clientId={ this.props.clientId }
-						isSelected={ this.state.isCaptionSelected }
-						onFocus={ this.onFocusCaption }
-						onBlur={ this.props.onBlur } // Always assign onBlur as props.
-						insertBlocksAfter={ this.props.insertBlocksAfter }
+						clientId={ props.clientId }
+						isSelected={ isCaptionSelected }
+						onFocus={ onFocusCaptionHandler }
+						onBlur={ props.onBlur } // Always assign onBlur as props.
+						insertBlocksAfter={ props.insertBlocksAfter }
 					/>
 				</View>
 			</TouchableWithoutFeedback>
-		);
-	}
-}
+		); 
+};
+
+VideoEdit.getDerivedStateFromProps = ( props, state ) => {
+		// Avoid a UI flicker in the toolbar by insuring that isCaptionSelected
+		// is updated immediately any time the isSelected prop becomes false.
+		return {
+			isCaptionSelected: props.isSelected && state.isCaptionSelected,
+		};
+	};
+
 
 export default compose( [
 	withSelect( ( select, { clientId } ) => ( {

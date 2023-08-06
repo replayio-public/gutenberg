@@ -1,7 +1,8 @@
 /**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+
+import { useEffect, useCallback } from '@wordpress/element';
 import { compose } from '@wordpress/compose';
 import { withSelect, withDispatch } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
@@ -22,74 +23,72 @@ import { store as editorStore } from '../../store';
  * * If `props.isAutosaveable` happens to be false at a time of checking for changes, the check is retried every second.
  * * The timer may be disabled by setting `props.disableIntervalChecks` to `true`. In that mode, any change will immediately trigger `props.autosave()`.
  */
-export class AutosaveMonitor extends Component {
-	constructor( props ) {
-		super( props );
-		this.needsAutosave = !! ( props.isDirty && props.isAutosaveable );
-	}
+export export const AutosaveMonitor = (props) => {
 
-	componentDidMount() {
-		if ( ! this.props.disableIntervalChecks ) {
-			this.setAutosaveTimer();
+
+    
+
+    useEffect(() => {
+		if ( ! props.disableIntervalChecks ) {
+			setAutosaveTimerHandler();
 		}
-	}
-
-	componentDidUpdate( prevProps ) {
-		if ( this.props.disableIntervalChecks ) {
-			if ( this.props.editsReference !== prevProps.editsReference ) {
-				this.props.autosave();
+	}, []);
+    useEffect(() => {
+		if ( props.disableIntervalChecks ) {
+			if ( props.editsReference !== prevProps.editsReference ) {
+				props.autosave();
 			}
 			return;
 		}
 
-		if ( this.props.interval !== prevProps.interval ) {
-			clearTimeout( this.timerId );
-			this.setAutosaveTimer();
+		if ( props.interval !== prevProps.interval ) {
+			clearTimeout( timerIdHandler );
+			setAutosaveTimerHandler();
 		}
 
-		if ( ! this.props.isDirty ) {
-			this.needsAutosave = false;
+		if ( ! props.isDirty ) {
+			needsAutosaveHandler = false;
 			return;
 		}
 
-		if ( this.props.isAutosaving && ! prevProps.isAutosaving ) {
-			this.needsAutosave = false;
+		if ( props.isAutosaving && ! prevProps.isAutosaving ) {
+			needsAutosaveHandler = false;
 			return;
 		}
 
-		if ( this.props.editsReference !== prevProps.editsReference ) {
-			this.needsAutosave = true;
+		if ( props.editsReference !== prevProps.editsReference ) {
+			needsAutosaveHandler = true;
 		}
-	}
-
-	componentWillUnmount() {
-		clearTimeout( this.timerId );
-	}
-
-	setAutosaveTimer( timeout = this.props.interval * 1000 ) {
-		this.timerId = setTimeout( () => {
-			this.autosaveTimerHandler();
+	}, []);
+    useEffect(() => {
+    return () => {
+		clearTimeout( timerIdHandler );
+	};
+}, []);
+    const setAutosaveTimerHandler = useCallback(() => {
+		timerIdHandler = setTimeout( () => {
+			autosaveTimerHandlerHandler();
 		}, timeout );
-	}
-
-	autosaveTimerHandler() {
-		if ( ! this.props.isAutosaveable ) {
-			this.setAutosaveTimer( 1000 );
+	}, []);
+    const autosaveTimerHandlerHandler = useCallback(() => {
+		if ( ! props.isAutosaveable ) {
+			setAutosaveTimerHandler( 1000 );
 			return;
 		}
 
-		if ( this.needsAutosave ) {
-			this.needsAutosave = false;
-			this.props.autosave();
+		if ( needsAutosaveHandler ) {
+			needsAutosaveHandler = false;
+			props.autosave();
 		}
 
-		this.setAutosaveTimer();
-	}
+		setAutosaveTimerHandler();
+	}, []);
 
-	render() {
-		return null;
-	}
-}
+    return null; 
+};
+
+
+
 
 export default compose( [
 	withSelect( ( select, ownProps ) => {
